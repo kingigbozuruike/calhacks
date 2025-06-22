@@ -29,7 +29,7 @@ const voiceCheckinSchema = new mongoose.Schema({
   // Voice transcription from Vapi
   transcription: {
     type: String,
-    required: true
+    required: false
   },
 
   // AI-analyzed health data from the voice input

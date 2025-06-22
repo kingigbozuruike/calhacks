@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const VoiceCheckinController = require('../controllers/VoiceCheckinController');
+const { verifyToken } = require('../middleware/verifyToken');
 
 /**
  * Voice Check-in Routes
@@ -13,7 +14,11 @@ const VoiceCheckinController = require('../controllers/VoiceCheckinController');
  * @access  Public (TODO: Add authentication middleware)
  * @body    { userId: string, phoneNumber: string }
  */
-router.post('/start', VoiceCheckinController.startCheckin);
+
+console.log('VoiceCheckinController:', VoiceCheckinController);
+
+
+router.post('/start', VoiceCheckinController.startDailyCheckin);
 
 /**
  * @route   POST /api/voice-checkin/webhook
@@ -21,7 +26,7 @@ router.post('/start', VoiceCheckinController.startCheckin);
  * @access  Public (Vapi webhook)
  * @body    { callId: string, transcript: string, callDuration: number, status: string }
  */
-router.post('/webhook', VoiceCheckinController.handleVapiWebhook);
+router.post('/webhook', VoiceCheckinController.handleWebhook);
 
 /**
  * @route   GET /api/voice-checkin/history
@@ -54,6 +59,6 @@ router.get('/attention', VoiceCheckinController.getCheckinsNeedingAttention);
  * @params  { id: string }
  * @query   { userId: string }
  */
-router.get('/:id', VoiceCheckinController.getCheckinDetails);
+router.get('/:id', VoiceCheckinController.getCheckinById);
 
 module.exports = router;

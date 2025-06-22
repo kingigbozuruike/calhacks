@@ -91,7 +91,7 @@ curl -X POST "http://localhost:5000/api/chatbot/message" \
 2. **Test Voice Features**:
    ```bash
    # Test webhook endpoint
-   curl -X POST "http://localhost:5000/api/voice-checkin/webhook" \
+   curl -X POST "https://9e53-20-163-40-128.ngrok-free.app" \
      -H "Content-Type: application/json" \
      -d '{"type":"function-call","functionCall":{"name":"submitCheckin","parameters":{"mood":"happy","symptoms":"none","notes":"Feeling great today"}}}'
    ```
