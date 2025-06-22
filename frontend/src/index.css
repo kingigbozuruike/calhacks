@@ -25,6 +25,21 @@ h1, h2, h3, p {
     100% { background-position: 0% 50%; transform: scale(1.05); }
 }
 
+@keyframes voicePulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 1;
+    }
+}
+
+.voice-pulse {
+    animation: voicePulse 2s ease-in-out infinite;
+}
+
 .sphere-animation {
     background: linear-gradient(45deg, #ec4899, #f9a8d4, #fbcfe8, #fda4af);
     background-size: 400% 400%;
@@ -35,6 +50,5 @@ h1, h2, h3, p {
 }
 
 .sphere-animation.recording {
-    animation-name: smoky-pulse-recording;
-    animation-duration: 4s;
+    animation: smoky-pulse-recording 2s ease-in-out infinite;
 }

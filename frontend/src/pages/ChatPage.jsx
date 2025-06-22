@@ -252,7 +252,7 @@ const ChatPage = () => {
                 onClick={handleSendMessage}
                 className="bg-pink-400 text-white w-10 h-10 flex items-center justify-center rounded-full hover:bg-pink-500 transition-colors duration-300 focus:outline-none"
               >
-                <FaPaperPlane />
+                <FaPaperPlane size={20} />
               </button>
             </div>
           </div>
