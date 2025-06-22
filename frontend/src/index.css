@@ -6,8 +6,14 @@
 
 @keyframes smoky-pulse {
     0% { background-position: 0% 50%; transform: scale(1); }
-    50% { background-position: 100% 50%; transform: scale(1.05); }
+    50% { background-position: 100% 50%; transform: scale(1.02); }
     100% { background-position: 0% 50%; transform: scale(1); }
+}
+
+@keyframes smoky-pulse-recording {
+    0% { background-position: 0% 50%; transform: scale(1.05); }
+    50% { background-position: 100% 50%; transform: scale(1.15); }
+    100% { background-position: 0% 50%; transform: scale(1.05); }
 }
 
 .sphere-animation {
@@ -15,4 +21,11 @@
     background-size: 400% 400%;
     animation: smoky-pulse 8s ease-in-out infinite;
     border-radius: 50%;
+    transform: scale(1);
+    transition: transform 0.3s ease;
+}
+
+.sphere-animation.recording {
+    animation-name: smoky-pulse-recording;
+    animation-duration: 4s;
 }
