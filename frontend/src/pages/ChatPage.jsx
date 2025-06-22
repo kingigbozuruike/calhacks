@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { FaPaperPlane, FaUserCircle, FaTimes, FaMicrophone } from 'react-icons/fa';
 import VoiceModeIcon from '../components/VoiceModeIcon';
+import Logo from '../components/Logo';
 
 const VoiceModeOverlay = ({ close, transcript, isRecording, onStartRecording }) => {
   return (
@@ -171,11 +172,7 @@ const ChatPage = () => {
       {isVoiceMode && <VoiceModeOverlay close={handleVoiceModeDeactivate} transcript={inputValue} isRecording={isRecording} onStartRecording={handleStartRecording} />}
       
       <header className="flex justify-center pt-8">
-        <Link to="/login">
-          <div className="text-4xl font-bold text-pink-400 font-fredoka">
-            bu<span className="text-pink-300">mp</span>
-          </div>
-        </Link>
+        <Logo className="text-4xl" />
       </header>
       
       <div className="relative overflow-hidden p-8 shrink-0">
@@ -202,8 +199,8 @@ const ChatPage = () => {
               className={`flex items-start gap-3 ${message.sender === 'user' ? 'justify-end' : ''}`}
             >
               {message.sender === 'ai' && (
-                <div className="w-8 h-8 bg-pink-400 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0">
-                  B
+                <div className="w-8 h-8 rounded-full overflow-hidden shrink-0">
+                  <img src="/images/representing-ai.webp" alt="AI" className="w-full h-full object-cover object-left" />
                 </div>
               )}
               <div

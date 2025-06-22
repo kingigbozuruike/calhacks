@@ -1,11 +1,11 @@
+import Logo from './Logo';
+
 function Header() {
 
   return (
     <header className="p-6 sticky top-0 z-50 bg-white">
       <nav className="flex justify-between items-center max-w-6xl mx-auto">
-        <a href="/" className="text-5xl font-medium text-thistle cursor-pointer" style={{fontFamily: 'Fredoka'}}>
-          bump
-        </a>
+        <Logo className="text-5xl" />
         
         <div className="flex items-center space-x-8">
           <div className="hidden md:flex space-x-10">

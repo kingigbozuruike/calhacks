@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import Logo from '../components/Logo';
 
 const LoginPage = () => {
   const steps = ['First Trimester', 'Second Trimester', 'Third Trimester'];
@@ -73,9 +74,7 @@ const LoginPage = () => {
       <div className="absolute -bottom-24 -right-12 w-96 h-96 bg-pink-100 rounded-full opacity-50" />
 
       <header className="relative z-10 flex justify-center pt-8">
-        <div className="text-4xl font-bold text-pink-400 font-fredoka">
-          bu<span className="text-pink-300">mp</span>
-        </div>
+        <Logo className="text-4xl" />
       </header>
       <main className="relative z-10 flex-grow flex flex-col items-center pt-12">
         <div className="w-full max-w-4xl px-4">

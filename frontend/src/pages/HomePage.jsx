@@ -1,14 +1,13 @@
 import { Link } from 'react-router-dom'
 // Images are now served from public/images
 // No need to import SVGs when they're in the public folder
+import Logo from '../components/Logo'
 
 function HomePage() {
   return (
     <div className="bg-white min-h-screen flex flex-col justify-between">
       <header className="flex justify-center pt-8">
-        <div className="text-4xl font-bold text-pink-400 font-fredoka">
-          bu<span className="text-pink-300">mp</span>
-        </div>
+        <Logo className="text-4xl" />
       </header>
 
       <main className="flex flex-col items-center justify-center">

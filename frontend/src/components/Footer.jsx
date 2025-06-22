@@ -1,3 +1,5 @@
+import Logo from './Logo';
+
 function Footer() {
   return (
     <footer className="py-12 bg-gray-50 border-t border-gray-100" id="footer">
@@ -5,9 +7,7 @@ function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Column 1: Logo and tagline */}
           <div>
-            <a href="/" className="text-4xl font-medium text-thistle block mb-4" style={{fontFamily: 'Fredoka'}}>
-              bump
-            </a>
+            <Logo className="text-4xl block mb-4" />
             <p className="text-gray-600 mb-4">Supporting your journey through pregnancy and beyond.</p>
             <div className="flex space-x-4">
               <a href="#" className="text-gray-400 hover:text-thistle">

@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 // Images are now served from public/images
 // No need to import images when they're in the public folder
 import { FaNotesMedical, FaPills, FaDumbbell, FaBed, FaWeight, FaHeart, FaCheck, FaCalendarAlt, FaUserMd, FaBaby, FaHospital, FaClipboardList } from 'react-icons/fa';
+import Logo from '../components/Logo';
 import DateSelector from '../components/DateSelector';
 
 const DailyLogPage = () => {
@@ -73,11 +74,7 @@ const DailyLogPage = () => {
       <FaHeart className="absolute bottom-0 right-0 text-purple-100 opacity-50 text-9xl transform translate-x-1/2 translate-y-1/2 -rotate-12" />
       
       <header className="flex justify-center pt-8">
-        <Link to="/login">
-          <div className="text-4xl font-bold text-pink-400 font-fredoka">
-            bu<span className="text-pink-300">mp</span>
-          </div>
-        </Link>
+        <Logo className="text-4xl" />
       </header>
 
       <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
