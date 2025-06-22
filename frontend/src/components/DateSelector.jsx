@@ -39,7 +39,7 @@ const DateSelector = ({ trimester }) => {
   };
 
   return (
-    <div className="bg-pink-300 rounded-lg p-4 text-white text-center shadow-md mb-8">
+    <div className="bg-pink-50 rounded-lg p-4 text-gray-700 text-center shadow-md mb-8">
       <div className="flex items-center justify-between">
         <button onClick={handlePrevWeek} className="focus:outline-none">
           <FaChevronLeft />
@@ -51,8 +51,8 @@ const DateSelector = ({ trimester }) => {
               onClick={() => setSelectedDay(day)}
               className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold transition-colors duration-300 ${
                 format(day, 'yyyy-MM-dd') === format(selectedDay, 'yyyy-MM-dd')
-                  ? 'bg-white text-pink-400'
-                  : 'hover:bg-pink-200'
+                  ? 'bg-carnation-pink text-white'
+                  : 'hover:bg-pink-100'
               }`}
             >
               {format(day, 'd')}

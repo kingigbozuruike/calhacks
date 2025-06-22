@@ -160,7 +160,7 @@ const LoginPage = () => {
           <div className="text-center mt-8 mb-16">
             <Link to={`/daily-log?trimester=${currentStep}`}>
               <button
-                className="bg-carnation-pink text-black px-8 py-3 rounded-lg font-semibold hover:bg-black hover:text-white transition-colors"
+                className="bg-carnation-pink text-black px-8 py-3 rounded-lg font-medium hover:bg-black hover:text-white transition-colors"
                 style={{fontFamily: 'Fredoka'}}
               >
                 Log Your Day

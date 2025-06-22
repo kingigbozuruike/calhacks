@@ -114,7 +114,7 @@ function SignUp() {
             <div className="mt-6">
               <button
                 type="submit"
-                className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-white bg-carnation-pink hover:bg-black transition-colors font-medium"
+                className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-black bg-carnation-pink hover:bg-black hover:text-white transition-colors font-medium"
                 style={{fontFamily: 'Fredoka'}}
               >
                 Create Account

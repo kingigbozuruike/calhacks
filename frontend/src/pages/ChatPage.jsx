@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { FaPaperPlane, FaUserCircle, FaTimes, FaMicrophone } from 'react-icons/fa';
 import VoiceModeIcon from '../components/VoiceModeIcon';
 import Logo from '../components/Logo';
+import TypingIndicator from '../components/TypingIndicator';
 
 const VoiceModeOverlay = ({ close, transcript, isRecording, onStartRecording }) => {
   return (
@@ -44,6 +45,7 @@ const ChatPage = () => {
   const [inputValue, setInputValue] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
 
   useEffect(() => {
     if (!('webkitSpeechRecognition' in window)) {
@@ -121,19 +123,19 @@ const ChatPage = () => {
 
   const trimesterInfo = {
     1: {
-        icon: '🍼',
+        icon: '/images/get-pregnant-icon.svg',
         title: 'First Trimester',
         weeks: 'Weeks 1–12',
         body: "So right now, you're in the very beginning of this journey — amazing! During the first trimester, your baby is just starting to form. Their brain and heart are developing, and while all that's happening, you might notice some changes in yourself too — like feeling extra tired, a bit queasy, or more emotional than usual. Totally normal — your body's working hard!"
     },
     2: {
-        icon: '🤰',
+        icon: '/images/get-pregnant-icon2.svg',
         title: 'Second Trimester',
         weeks: 'Weeks 13–26',
         body: "This is often the part where many moms start to feel a little better — nausea usually eases up, and you might get a burst of energy. Your baby's growing fast, and you might even feel them move for the first time! There may still be some discomfort, like backaches or that weird round ligament pain, but it's all part of the progress."
     },
     3: {
-        icon: '🤱',
+        icon: '/images/get-pregnant-icon3.svg',
         title: 'Third Trimester',
         weeks: 'Weeks 27–40',
         body: "You're in the home stretch! Your baby's getting bigger every week, and your body's preparing for delivery. It's normal to feel more out of breath, a little swollen, or even get practice contractions (those are called Braxton–Hicks). You've got this — every day is a step closer to meeting your little one."
@@ -151,13 +153,18 @@ const ChatPage = () => {
     if (messageToSend) {
       setMessages([...messages, { id: Date.now(), text: messageToSend, sender: 'user' }]);
       setInputValue('');
-      // Placeholder for AI response
+      
+      // Show typing indicator
+      setIsTyping(true);
+      
+      // Simulate AI response after a delay
       setTimeout(() => {
+        setIsTyping(false);
         setMessages((prevMessages) => [
           ...prevMessages,
           { id: Date.now() + 1, text: "Thanks for sharing. It's important to acknowledge your feelings.", sender: 'ai' },
         ]);
-      }, 1000);
+      }, 2000);
     }
   };
 
@@ -180,26 +187,26 @@ const ChatPage = () => {
         <div className="absolute -bottom-24 -right-12 w-96 h-96 bg-green-100 rounded-full opacity-50"></div>
 
         <div className="relative max-w-3xl mx-auto flex items-center gap-8">
-            <div className="text-8xl p-4 bg-white/60 rounded-2xl shadow-md backdrop-blur-sm">
-                {currentTrimesterInfo.icon}
+            <div className="w-40 h-40 p-4 bg-white/60 rounded-2xl backdrop-blur-sm">
+                <img src={currentTrimesterInfo.icon} alt={currentTrimesterInfo.title} className="w-full h-full object-contain" />
             </div>
             <div className="text-gray-700">
                 <p className="text-lg font-semibold text-purple-500">{currentTrimesterInfo.title}</p>
-                <h2 className="text-3xl font-bold text-gray-800 font-fredoka mb-2">{currentTrimesterInfo.weeks}</h2>
+                <h2 className="text-3xl font-bold text-gray-800 mb-2" style={{fontFamily: 'Poppins'}}>{currentTrimesterInfo.weeks}</h2>
                 <p className="text-sm">{currentTrimesterInfo.body}</p>
             </div>
         </div>
       </div>
 
       <main className="flex-grow overflow-y-auto p-4">
-        <div className="max-w-3xl mx-auto w-full space-y-4">
+        <div className="max-w-3xl mx-auto w-full space-y-4 border-2 border-gray-200 rounded-3xl p-6 bg-white/80">
           {messages.map((message) => (
             <div
               key={message.id}
               className={`flex items-start gap-3 ${message.sender === 'user' ? 'justify-end' : ''}`}
             >
               {message.sender === 'ai' && (
-                <div className="w-8 h-8 rounded-full overflow-hidden shrink-0">
+                <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border-2 border-gray-200">
                   <img src="/images/representing-ai.webp" alt="AI" className="w-full h-full object-cover object-left" />
                 </div>
               )}
@@ -213,10 +220,13 @@ const ChatPage = () => {
                 {message.text}
               </div>
               {message.sender === 'user' && (
-                 <FaUserCircle className="text-gray-400 text-3xl shrink-0" />
+                <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border-2 border-gray-200">
+                  <img src="/images/chat-avatar-lady.svg" alt="User" className="w-full h-full object-cover" />
+                </div>
               )}
             </div>
           ))}
+          {isTyping && <TypingIndicator />}
           <div ref={messagesEndRef} />
         </div>
       </main>

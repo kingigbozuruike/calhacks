@@ -44,10 +44,10 @@ const DailyLogPage = () => {
   const [monitoringItems, setMonitoringItems] = useState(trimesterTasks[trimester]);
 
   const [badges, setBadges] = useState([
-    { id: 1, title: 'First Trimester Health Star', earned: trimester === 1, icon: '🏅' },
-    { id: 2, title: 'Second Trimester Champion', earned: trimester === 2, icon: '🌟' },
-    { id: 3, title: 'Third Trimester Warrior', earned: trimester === 3, icon: '💪' },
-    { id: 4, title: `Logged symptoms ${trimester === 1 ? '7' : trimester === 2 ? '14' : '21'} days in a row`, earned: trimester === 3, icon: '🗓️' },
+    { id: 1, title: 'First Trimester Health Star', earned: trimester === 1, icon: '/images/get-pregnant-icon.svg' },
+    { id: 2, title: 'Second Trimester Champion', earned: trimester === 2, icon: '/images/get-pregnant-icon2.svg' },
+    { id: 3, title: 'Third Trimester Warrior', earned: trimester === 3, icon: '/images/get-pregnant-icon3.svg' },
+    { id: 4, title: `Logged symptoms ${trimester === 1 ? '7' : trimester === 2 ? '14' : '21'} days in a row`, earned: trimester === 3, icon: '/images/calendar-new.svg' },
   ]);
 
   const toggleItem = (id) => {
@@ -83,7 +83,7 @@ const DailyLogPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* To Do Section */}
           <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg p-6 h-full">
-            <h2 className="text-3xl font-bold text-gray-800 mb-6 font-fredoka">To Do</h2>
+            <h2 className="text-3xl font-bold text-gray-800 mb-6">To Do</h2>
             <div className="space-y-3">
               {monitoringItems.map((item) => (
                 <div key={item.id} className="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50/50 transition-colors">
@@ -113,13 +113,13 @@ const DailyLogPage = () => {
 
           {/* How are you feeling Section */}
           <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg p-8 flex flex-col">
-            <h2 className="text-3xl font-bold text-gray-800 mb-6 font-fredoka">How are you feeling?</h2>
+            <h2 className="text-3xl font-bold text-gray-800 mb-6">How are you feeling?</h2>
             <div className="flex-grow flex flex-col items-center justify-center text-center">
-              <img src="/images/husband and wife 2.webp" alt="Support" className="w-64 h-64 object-cover rounded-full mb-6 shadow-md"/>
+              <img src="/images/husband-and-wife.svg" alt="Support" className="w-85 h-72 "/>
               <p className="text-gray-600 mb-6 text-lg">Share your thoughts and feelings to get personalized support.</p>
               <Link to={`/chat?trimester=${trimester}`}>
-                <button className="bg-pink-400 text-white font-bold py-3 px-8 rounded-lg hover:bg-pink-500 transition duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                  Share Your Feelings
+                <button className="bg-carnation-pink text-black px-8 py-3 rounded-lg font-medium hover:bg-black hover:text-white transition-colors" style={{fontFamily: 'Fredoka'}}>
+                  Chat with Bumpy
                 </button>
               </Link>
             </div>
@@ -128,7 +128,7 @@ const DailyLogPage = () => {
 
         {/* Achievements Section */}
         <div className="mt-16">
-          <h2 className="text-3xl font-bold text-gray-800 mb-6 font-fredoka text-center">Your Achievements</h2>
+          <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">Your Achievements</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {badges.map((badge) => (
               <div
@@ -137,7 +137,9 @@ const DailyLogPage = () => {
                   badge.earned ? 'opacity-100' : 'opacity-50 grayscale'
                 }`}
               >
-                <div className="text-6xl mb-4">{badge.icon}</div>
+                <div className="w-16 h-16 mb-4 mx-auto">
+                  <img src={badge.icon} alt={badge.title} className="w-full h-full object-contain" />
+                </div>
                 <h3 className="font-semibold text-gray-800 text-sm">{badge.title}</h3>
                 {badge.earned && (
                   <span className="mt-2 inline-block bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
