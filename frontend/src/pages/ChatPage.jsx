@@ -7,7 +7,7 @@ const VoiceModeOverlay = ({ close, transcript, isRecording, onStartRecording }) 
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col items-center p-8">
       <div className="flex-grow flex flex-col items-center justify-center">
-        <div className={`w-40 h-40 md:w-56 md:h-56 sphere-animation`}></div>
+        <div className={`w-40 h-40 md:w-56 md:h-56 sphere-animation ${isRecording ? 'recording' : ''}`}></div>
         <p className="text-gray-600 text-xl md:text-2xl mt-8 h-16 text-center">
           {isRecording ? transcript || "Listening..." : "Tap the microphone to start recording"}
         </p>
