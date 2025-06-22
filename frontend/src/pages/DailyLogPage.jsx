@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import husbandAndWifeImg from '../assets/husband and wife 2.webp';
+// Images are now served from public/images
+// No need to import images when they're in the public folder
 import { FaNotesMedical, FaPills, FaDumbbell, FaBed, FaWeight, FaHeart, FaCheck, FaCalendarAlt, FaUserMd, FaBaby, FaHospital, FaClipboardList } from 'react-icons/fa';
 import DateSelector from '../components/DateSelector';
 
@@ -117,7 +118,7 @@ const DailyLogPage = () => {
           <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg p-8 flex flex-col">
             <h2 className="text-3xl font-bold text-gray-800 mb-6 font-fredoka">How are you feeling?</h2>
             <div className="flex-grow flex flex-col items-center justify-center text-center">
-              <img src={husbandAndWifeImg} alt="Support" className="w-64 h-64 object-cover rounded-full mb-6 shadow-md"/>
+              <img src="/images/husband and wife 2.webp" alt="Support" className="w-64 h-64 object-cover rounded-full mb-6 shadow-md"/>
               <p className="text-gray-600 mb-6 text-lg">Share your thoughts and feelings to get personalized support.</p>
               <Link to={`/chat?trimester=${trimester}`}>
                 <button className="bg-pink-400 text-white font-bold py-3 px-8 rounded-lg hover:bg-pink-500 transition duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">

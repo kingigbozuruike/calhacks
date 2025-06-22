@@ -1,8 +1,6 @@
 import { Link } from 'react-router-dom'
-import getPregnantIcon from '../assets/get-pregnant-icon.svg'
-import trackPregnancyIcon from '../assets/get-pregnant-icon2.svg'
-import childDevelopmentIcon from '../assets/get-pregnant-icon3.svg'
-import '../App.css'
+// Images are now served from public/images
+// No need to import SVGs when they're in the public folder
 
 function HomePage() {
   return (
@@ -18,7 +16,7 @@ function HomePage() {
 
         <div className="space-y-6 w-full max-w-lg px-4">
           <div className="bg-purple-100 rounded-2xl p-6 flex items-center space-x-6 cursor-pointer">
-            <img src={getPregnantIcon} alt="Get pregnant" className="w-16 h-16" />
+            <img src="/images/get-pregnant-icon.svg" alt="Get pregnant" className="w-16 h-16" />
             <div>
               <h2 className="font-bold text-xl text-gray-800">Get pregnant</h2>
               <p className="text-gray-600">Track your cycles and best days to conceive</p>
@@ -26,7 +24,7 @@ function HomePage() {
           </div>
 
           <div className="bg-pink-100 rounded-2xl p-6 flex items-center space-x-6 cursor-pointer">
-            <img src={trackPregnancyIcon} alt="Track my pregnancy" className="w-16 h-16" />
+            <img src="/images/get-pregnant-icon2.svg" alt="Track my pregnancy" className="w-16 h-16" />
             <div>
               <h2 className="font-bold text-xl text-gray-800">Track my pregnancy</h2>
               <p className="text-gray-600">Monitor the progress of your baby on the way</p>
@@ -34,7 +32,7 @@ function HomePage() {
           </div>
 
           <div className="bg-yellow-100 rounded-2xl p-6 flex items-center space-x-6 cursor-pointer">
-            <img src={childDevelopmentIcon} alt="Child's development" className="w-16 h-16" />
+            <img src="/images/get-pregnant-icon3.svg" alt="Child's development" className="w-16 h-16" />
             <div>
               <h2 className="font-bold text-xl text-gray-800">Child's development</h2>
               <p className="text-gray-600">Stay informed on your newborn's health and development</p>
