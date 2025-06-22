@@ -1,15 +1,15 @@
 const express = require('express');
-const authController = require('../controllers/AuthController');
 const router = express.Router();
+const AuthController = require('../controllers/AuthController');
 
 // @route   POST /api/auth/register
-// @desc    Register new user
+// @desc    Register a new user
 // @access  Public
-router.post('/register', authController.register);
+router.post('/register', AuthController.register);
 
 // @route   POST /api/auth/login
 // @desc    Login user and return JWT
 // @access  Public
-router.post('/login', authController.login);
+router.post('/login', AuthController.login);
 
 module.exports = router;
