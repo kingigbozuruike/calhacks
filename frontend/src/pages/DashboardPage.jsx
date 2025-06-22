@@ -305,11 +305,11 @@ const DashboardPage = () => {
           {/* Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             {/* Today's Tip Card */}
-            <div className="bg-purple-50 rounded-2xl p-6">
+            <div className="bg-purple-50 rounded-2xl p-6 h-80 flex flex-col">
               <h3 className="text-xl font-bold text-gray-800 mb-4" style={{fontFamily: 'Poppins'}}>
                 Today's Tip
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-3 flex-grow">
                 {dashboardData?.dailyContent?.tip ? (
                   <div className="flex items-start space-x-3">
                     <div className="w-2 h-2 bg-purple-400 rounded-full mt-2 flex-shrink-0"></div>
@@ -332,12 +332,12 @@ const DashboardPage = () => {
             </div>
 
             {/* Daily Todo Card - Clickable */}
-            <Link to="/daily-log" className="block">
-              <div className="bg-pink-50 rounded-2xl p-6 hover:bg-pink-100 transition-colors cursor-pointer">
+            <Link to="/daily-log" className="block h-80">
+              <div className="bg-pink-50 rounded-2xl p-6 hover:bg-pink-100 transition-colors cursor-pointer h-full flex flex-col">
                 <h3 className="text-xl font-bold text-gray-800 mb-4" style={{fontFamily: 'Poppins'}}>
                   Daily Todo
                 </h3>
-                <div className="space-y-2 mb-4">
+                <div className="space-y-2 mb-4 flex-grow">
                   {dashboardData?.tasks?.today?.length > 0 ? (
                     dashboardData.tasks.today.slice(0, 4).map((task, index) => (
                       <div key={index} className="flex items-start space-x-3">
@@ -359,19 +359,19 @@ const DashboardPage = () => {
                     ))
                   )}
                 </div>
-                <div className="w-full bg-carnation-pink text-black py-2 px-4 rounded-lg font-medium text-center text-sm" style={{fontFamily: 'Fredoka'}}>
+                <div className="w-full bg-carnation-pink text-black py-2 px-4 rounded-lg font-medium text-center text-sm mt-auto" style={{fontFamily: 'Fredoka'}}>
                   View & Complete Tasks →
                 </div>
               </div>
             </Link>
 
             {/* Affirmations Card */}
-            <div className="bg-green-50 rounded-2xl p-6">
+            <div className="bg-green-50 rounded-2xl p-6 h-80 flex flex-col">
               <h3 className="text-xl font-bold text-gray-800 mb-4" style={{fontFamily: 'Poppins'}}>
                 Daily Affirmation
               </h3>
-              <div className="text-center">
-                <p className="text-lg text-gray-700 italic mb-4" style={{fontFamily: 'Poppins'}}>
+              <div className="text-center flex-grow flex items-center justify-center">
+                <p className="text-lg text-gray-700 italic" style={{fontFamily: 'Poppins'}}>
                   "{dashboardData?.dailyContent?.affirmation
                     ? (typeof dashboardData.dailyContent.affirmation === 'object'
                         ? dashboardData.dailyContent.affirmation.content || dashboardData.dailyContent.affirmation.title
