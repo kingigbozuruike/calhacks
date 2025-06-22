@@ -20,7 +20,7 @@ class VoiceCheckinController {
         });
       }
 
-      const user = await User.findById(userId);
+      const user = await User.findOne({ userId: userId });
       if (!user) {
         return res.status(404).json({
           success: false,
@@ -28,9 +28,29 @@ class VoiceCheckinController {
         });
       }
 
-      // Determine the specific pregnancy context for the assistant's first message
-      const effectiveTrimester = trimester || user.pregnancyStage?.trimester || 1;
-      const effectiveWeekOfPregnancy = weekOfPregnancy || user.pregnancyStage?.weekOfPregnancy || 1;
+      // Calculate actual pregnancy data from user's conception date
+      let effectiveTrimester = 1;
+      let effectiveWeekOfPregnancy = 1;
+
+      if (user.conceptionDate) {
+        const conceptionDate = new Date(user.conceptionDate);
+        const today = new Date();
+        const daysSinceConception = Math.floor((today - conceptionDate) / (1000 * 60 * 60 * 24));
+        effectiveWeekOfPregnancy = Math.max(1, Math.floor(daysSinceConception / 7));
+
+        // Calculate trimester based on weeks
+        if (effectiveWeekOfPregnancy <= 13) {
+          effectiveTrimester = 1;
+        } else if (effectiveWeekOfPregnancy <= 27) {
+          effectiveTrimester = 2;
+        } else {
+          effectiveTrimester = 3;
+        }
+      }
+
+      // Override with provided values if they exist
+      if (trimester) effectiveTrimester = trimester;
+      if (weekOfPregnancy) effectiveWeekOfPregnancy = weekOfPregnancy;
 
       // Prepare minimal assistant overrides for this specific call.
       // We are no longer overriding the `systemPrompt` here, as the base assistant
@@ -49,14 +69,22 @@ class VoiceCheckinController {
       });
 
       // Create a record in your MongoDB to track this voice check-in.
-      const record = await VoiceCheckin.create({
-        userId,
-        callId: call.id,
-        assistantId: VapiService.defaultAssistantId, // Use the ID of the single Luna assistant
-        status: 'initiated',
-        pregnancyContext: { trimester: effectiveTrimester, weekOfPregnancy: effectiveWeekOfPregnancy },
-        startedAt: new Date()
-      });
+      // Only log the record creation, don't let errors here affect the response
+      let record;
+      try {
+        record = await VoiceCheckin.create({
+          userId,
+          callId: call.id,
+          assistantId: VapiService.lunaAssistantId || 'default-assistant', // Use the Luna assistant ID
+          status: 'initiated',
+          pregnancyContext: { trimester: effectiveTrimester, weekOfPregnancy: effectiveWeekOfPregnancy },
+          startedAt: new Date()
+        });
+        console.log('Voice checkin record created successfully:', record._id);
+      } catch (recordError) {
+        console.error('Error creating voice checkin record (call still successful):', recordError.message);
+        // Don't throw error here - the call was successful, just logging failed
+      }
 
       res.json({
         success: true,

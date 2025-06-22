@@ -1,176 +1,139 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import Logo from '../components/Logo';
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import SimpleHeader from '../components/SimpleHeader';
 
-const LoginPage = () => {
-  const steps = ['First Trimester', 'Second Trimester', 'Third Trimester'];
-  const [currentStep, setCurrentStep] = useState(1);
-  const progress = ((currentStep - 1) / (steps.length - 1)) * 100;
+function LoginPage() {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const facts = [
-    "A baby's heart starts beating at just 6 weeks.",
-    'Your blood volume increases by 40-50% during pregnancy.',
-    'Babies can hear their mother\'s voice from inside the womb.',
-    'The longest recorded pregnancy was 375 days long!',
-  ];
-
-  const trimesterTips = {
-    1: [
-      "Stay hydrated - aim for 8-10 glasses of water daily",
-      "Take your prenatal vitamins with food",
-      "Get plenty of rest - your body is working hard",
-      "Eat small, frequent meals to manage nausea",
-    ],
-    2: [
-      "Incorporate regular, gentle exercise like swimming or walking",
-      "Start doing Kegel exercises to strengthen pelvic floor muscles",
-      "Moisturize your belly to help with itchy skin",
-      "Sleep on your side, preferably the left, for better blood flow",
-    ],
-    3: [
-      "Pack your hospital bag and have it ready",
-      "Track your baby's movements daily",
-      "Learn the signs of labor",
-      "Rest and elevate your feet whenever possible to reduce swelling",
-    ],
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear error when user starts typing
+    if (error) setError('');
   };
 
-  const initialTodos = [
-    { text: 'Drink 8-10 glasses of water', completed: false },
-    { text: 'Take your prenatal vitamins', completed: true },
-    { text: 'Go for a 30-minute walk', completed: false },
-    { text: 'Practice deep breathing for 10 minutes', completed: false },
-    { text: 'Eat a nutrient-rich meal', completed: false },
-  ];
-  
-  const trimesterSizes = {
-    1: { fruit: 'lemon', image: '/images/lemon.png' },
-    2: { fruit: 'pineapple', image: '/images/pineapple.svg' },
-    3: { fruit: 'watermelon', image: '/images/watermelon.png' },
-  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
 
-  const [currentFact, setCurrentFact] = useState(0);
-  const [todos, setTodos] = useState(initialTodos);
-  const currentSize = trimesterSizes[currentStep];
-  const currentTips = trimesterTips[currentStep];
+    if (!formData.email || !formData.password) {
+      setError('Please fill in all fields');
+      return;
+    }
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentFact((prevFact) => (prevFact + 1) % facts.length);
-    }, 5000); // Change fact every 5 seconds
-    return () => clearInterval(timer);
-  }, [facts.length]);
+    setLoading(true);
 
-  const toggleTodo = (index) => {
-    const newTodos = [...todos];
-    newTodos[index].completed = !newTodos[index].completed;
-    setTodos(newTodos);
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Store the JWT token
+        localStorage.setItem('token', data.token);
+
+        // Redirect to dashboard after successful login
+        navigate('/dashboard');
+      } else {
+        setError(data.msg || 'Login failed. Please try again.');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Network error. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="bg-white min-h-screen flex flex-col relative overflow-hidden">
-      {/* Decorative Background Shapes */}
-      <div className="absolute -top-24 -left-24 w-72 h-72 bg-purple-100 rounded-full opacity-50" />
-      <div className="absolute -bottom-24 -right-12 w-96 h-96 bg-pink-100 rounded-full opacity-50" />
+    <div className="min-h-screen bg-white flex flex-col">
+      <SimpleHeader />
 
-      <header className="relative z-10 flex justify-center pt-8">
-        <Logo className="text-4xl" />
-      </header>
-      <main className="relative z-10 flex-grow flex flex-col items-center pt-12">
-        <div className="w-full max-w-4xl px-4">
-          {/* Progress Bar */}
-          <div className="relative mb-12">
-            <div className="absolute top-5 left-0 w-full px-5">
-              <div className="relative w-full h-0.5 bg-gray-300">
-                <div
-                  className="absolute top-0 left-0 h-full bg-pink-400 transition-all duration-500"
-                  style={{ width: `${progress}%` }}
+      <main className="flex-grow flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-lg">
+          <div className="flex justify-center mb-4">
+            <img src="/images/signup-modal-image.svg" alt="Login" className="h-32" />
+          </div>
+
+          <h2 className="text-2xl font-semibold text-gray-900 text-center mb-6" style={{fontFamily: 'Poppins'}}>
+            Welcome back to Bump!
+          </h2>
+
+          <form onSubmit={handleSubmit}>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700" style={{fontFamily: 'Poppins'}}>
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-thistle focus:border-thistle"
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700" style={{fontFamily: 'Poppins'}}>
+                  Password
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-thistle focus:border-thistle"
+                  required
                 />
               </div>
             </div>
-            <div className="relative flex justify-between">
-              {steps.map((step, index) => (
-                <div
-                  key={step}
-                  className="text-center cursor-pointer"
-                  onClick={() => setCurrentStep(index + 1)}
-                >
-                  <div
-                    className={`h-10 w-10 rounded-full flex items-center justify-center mx-auto relative transition-colors duration-300 ${
-                      index + 1 <= currentStep
-                        ? 'bg-pink-400 text-white'
-                        : 'bg-white border-2 border-gray-300 text-gray-500'
-                    }`}
-                  >
-                    {index + 1}
-                  </div>
-                  <p
-                    className={`mt-2 text-sm transition-colors duration-300 ${
-                      index + 1 <= currentStep ? 'font-semibold text-gray-900' : 'text-gray-500'
-                    }`}
-                  >
-                    {step}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Main Content */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-            {/* Left Column: Fun Fact */}
-            <div className="bg-purple-50 rounded-2xl p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4" style={{fontFamily: 'Poppins'}}>Did you know?</h2>
-              <div className="relative h-32 flex items-center">
-                <p className="text-lg text-gray-600">{facts[currentFact]}</p>
-              </div>
-            </div>
-
-            {/* Right Column: Today's Tip */}
-            <div className="bg-pink-50 rounded-2xl p-6">
-              <h3 className="text-2xl font-bold text-gray-800 mb-4" style={{fontFamily: 'Poppins'}}>Today's Tip</h3>
-              <div className="space-y-3">
-                {currentTips.map((tip, index) => (
-                  <div key={index} className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-purple-400 rounded-full mt-2 flex-shrink-0"></div>
-                    <p className="text-gray-700 text-sm">{tip}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          
-          {/* Baby Size Visualizer */}
-          <div className="bg-green-50 rounded-2xl p-6 w-full text-center">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4" style={{fontFamily: 'Poppins'}}>Your baby is growing!</h2>
-            {currentSize && (
-              <div className="flex flex-col items-center justify-center">
-                <div className="w-24 h-24 mb-4">
-                  <img src={currentSize.image} alt={currentSize.fruit} className="w-full h-full object-contain" />
-                </div>
-                <div className="text-center">
-                  <p className="text-xl text-gray-700">This trimester, they're about the size of a</p>
-                  <p className="text-3xl font-bold text-gray-900">{currentSize.fruit}!</p>
-                </div>
+            {error && (
+              <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md">
+                {error}
               </div>
             )}
-          </div>
 
-          {/* Log Your Day Button */}
-          <div className="text-center mt-8 mb-16">
-            <Link to={`/daily-log?trimester=${currentStep}`}>
+            <div className="mt-6">
               <button
-                className="bg-carnation-pink text-black px-8 py-3 rounded-lg font-medium hover:bg-black hover:text-white transition-colors"
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-black bg-carnation-pink hover:bg-black hover:text-white transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{fontFamily: 'Fredoka'}}
               >
-                Log Your Day
+                {loading ? 'Signing In...' : 'Sign In'}
               </button>
-            </Link>
-          </div>
+            </div>
+
+            <div className="mt-4 text-center">
+              <Link to="/signup" className="text-sm text-thistle hover:underline" style={{fontFamily: 'Poppins'}}>
+                Don't have an account? Sign up
+              </Link>
+            </div>
+          </form>
         </div>
       </main>
     </div>
   );
-};
+}
 
-export default LoginPage; 
+export default LoginPage;

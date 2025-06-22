@@ -1,5 +1,5 @@
-// TODO: Developer A - Import User model for user validation once mongoose is set up
-// const User = require('../models/User');
+// Import User model for user validation
+const User = require('../models/User');
 
 // Import services for session-based conversations
 const GeminiService = require('../services/GeminiService');
@@ -12,9 +12,8 @@ const ChatHistory = require('../models/ChatHistory');
  */
 const handleChatMessage = async (req, res) => {
   try {
-    // TODO: Developer A - Replace with actual user ID from JWT token
-    // const userId = req.user.id;
-    const userId = req.body.userId || 'user123'; // Mock user ID for development
+    // Get actual user ID from JWT token
+    const userId = req.user.id;
 
     const { message, context, sessionId } = req.body;
 
@@ -26,17 +25,58 @@ const handleChatMessage = async (req, res) => {
       });
     }
 
-    // TODO: Developer A - Get user's pregnancy information for context
-    // const user = await User.findById(userId);
-    // const trimester = user.trimester;
-    // const weekOfPregnancy = user.weekOfPregnancy;
+    // Get user's actual pregnancy information from database
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
 
-    // Mock user context for development
-    const userContext = {
-      trimester: context?.trimester || 1,
-      weekOfPregnancy: context?.weekOfPregnancy || 8,
-      dueDate: context?.dueDate || new Date(Date.now() + 7 * 30 * 24 * 60 * 60 * 1000) // ~7 months from now
+    // Calculate current pregnancy context from user's actual data
+    let userContext = {
+      trimester: 1,
+      weekOfPregnancy: 1,
+      dueDate: null
     };
+
+    if (user.conceptionDate) {
+      const now = new Date();
+      const conception = new Date(user.conceptionDate);
+
+      console.log(`DEBUG - User ${userId} conception date:`, user.conceptionDate);
+      console.log(`DEBUG - Parsed conception date:`, conception);
+      console.log(`DEBUG - Current date:`, now);
+
+      const daysSinceConception = Math.floor((now - conception) / (1000 * 60 * 60 * 24));
+      const weekOfPregnancy = Math.floor(daysSinceConception / 7) + 1; // +1 because pregnancy starts at week 1
+
+      console.log(`DEBUG - Days since conception:`, daysSinceConception);
+      console.log(`DEBUG - Week of pregnancy:`, weekOfPregnancy);
+
+      // Calculate trimester based on weeks
+      let trimester = 1;
+      if (weekOfPregnancy > 27) trimester = 3;
+      else if (weekOfPregnancy > 13) trimester = 2;
+
+      console.log(`DEBUG - Calculated trimester:`, trimester);
+
+      // Calculate due date (40 weeks from conception)
+      const dueDate = new Date(conception);
+      dueDate.setDate(dueDate.getDate() + (40 * 7)); // 40 weeks = 280 days
+
+      userContext = {
+        trimester,
+        weekOfPregnancy: Math.max(1, weekOfPregnancy),
+        dueDate: dueDate.toISOString(),
+        firstName: user.firstName,
+        lastName: user.lastName
+      };
+    }
+
+
+    console.log(`Chat context for user ${userId}:`, userContext);
 
     // Get or create session for conversation continuity
     const currentSessionId = sessionId || SessionService.createSession(userId);
@@ -47,10 +87,10 @@ const handleChatMessage = async (req, res) => {
     });
 
     // Get user's stored context for personalization
-    const storedContext = await ChatHistory.getPregnancyContext(userId);
+    const storedContext = await ChatHistory.getUserContext(userId);
     const enhancedContext = {
       ...userContext,
-      ...storedContext
+      ...(storedContext || {})
     };
 
     // Generate response using Gemini AI service with conversation context
@@ -108,9 +148,8 @@ const handleChatMessage = async (req, res) => {
  */
 const getChatHistory = async (req, res) => {
   try {
-    // TODO: Developer A - Replace with actual user ID from JWT token
-    // const userId = req.user.id;
-    const userId = req.query.userId || 'user123'; // Mock user ID for development
+    // Get actual user ID from JWT token
+    const userId = req.user.id;
 
     const limit = parseInt(req.query.limit) || 50;
     const offset = parseInt(req.query.offset) || 0;
@@ -170,9 +209,8 @@ const getChatHistory = async (req, res) => {
  */
 const clearChatHistory = async (req, res) => {
   try {
-    // TODO: Developer A - Replace with actual user ID from JWT token
-    // const userId = req.user.id;
-    const userId = req.body.userId || req.query.userId || 'user123'; // Mock user ID for development
+    // Get actual user ID from JWT token
+    const userId = req.user.id;
 
     // TODO: Developer A - Implement actual chat history deletion
     // await ChatHistory.deleteMany({ userId });

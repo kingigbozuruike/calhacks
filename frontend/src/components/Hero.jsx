@@ -1,3 +1,5 @@
+import VoiceAssistantButton from "./VoiceAssistantButton"
+
 function Hero() {
   return (
     <section className="flex flex-col md:flex-row items-center mb-20 gap-8">

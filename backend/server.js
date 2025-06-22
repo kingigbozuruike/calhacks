@@ -33,15 +33,25 @@ mongoose.connect(process.env.MONGO_URI, {
 });
 
 // --- Routes ---
+console.log('🛣️  Registering routes...');
 app.use('/api/auth', require('./routes/auth'));
+console.log('✅ Auth routes registered');
 app.use('/api/profile', require('./routes/profile'));
+console.log('✅ Profile routes registered');
 app.use('/api/logs', require('./routes/logs'));
+console.log('✅ Logs routes registered');
 app.use('/api/dashboard', require('./routes/dashboard'));
+console.log('✅ Dashboard routes registered');
 app.use('/api/tasks', require('./routes/tasks'));
+console.log('✅ Tasks routes registered');
 app.use('/api/chatbot', require('./routes/chat'));
+console.log('✅ Chatbot routes registered');
+app.use('/api/notes', require('./routes/notes'));
+console.log('✅ Notes routes registered');
 
 // Your voice check-in routes
 app.use('/api/voice-checkin', require('./routes/voiceCheckin'));
+console.log('✅ Voice check-in routes registered');
 
 // Health check endpoint
 app.get('/api/health', (_req, res) => {

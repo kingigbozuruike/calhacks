@@ -1,6 +1,10 @@
 // TODO: Developer A - Replace with actual Mongoose model once MongoDB is set up
 // const mongoose = require('mongoose');
 
+// Import required models and utilities at the top level
+const User = require('./User');
+const { getTrimester, getWeekOfPregnancy, calculateDueDate } = require('../utils/pregnancyUtils');
+
 /**
  * ChatHistory Model - Stores user conversation context and summaries
  * This stores persistent context between sessions, NOT full conversation history
@@ -66,12 +70,26 @@ class ChatHistory {
    * @returns {Object|null} User context or null if not found
    */
   async getUserContext(userId) {
-    const context = this.userContexts.get(userId);
+    console.log(`🔍 [getUserContext] Looking for context for user: ${userId}`);
+    console.log(`📋 [getUserContext] All stored user IDs:`, Array.from(this.userContexts.keys()));
+    console.log(`🔢 [getUserContext] Total contexts stored: ${this.userContexts.size}`);
+
+    // Ensure we're working with string userId
+    const userIdString = String(userId).trim();
+    console.log(`🔄 [getUserContext] Converted userId to string: ${userIdString}`);
+
+    // For new users, return null to ensure fresh context
+    const context = this.userContexts.get(userIdString);
 
     if (!context) {
+      console.log(`❌ [getUserContext] No context found for user: ${userIdString} - This is CORRECT for new users`);
+      console.log(`🔍 [getUserContext] Checking if any stored IDs match:`,
+        Array.from(this.userContexts.keys()).map(id => ({ stored: id, matches: id === userIdString })));
       return null;
     }
 
+    console.log(`✅ [getUserContext] Found EXISTING context for user ${userIdString}:`, context);
+    console.log(`⚠️ [getUserContext] WARNING: This user has previous conversation history`);
     // Return a copy to prevent direct modification
     return JSON.parse(JSON.stringify(context));
   }
@@ -83,8 +101,12 @@ class ChatHistory {
    * @returns {Object} Updated context
    */
   async updateUserContext(userId, contextData) {
-    const existingContext = this.userContexts.get(userId) || {
-      userId,
+    // Ensure consistent string conversion
+    const userIdString = String(userId);
+    console.log(`🔄 [updateUserContext] Converting userId to string: ${userIdString}`);
+
+    const existingContext = this.userContexts.get(userIdString) || {
+      userId: userIdString,
       pregnancyContext: {},
       conversationSummary: {
         commonConcerns: [],
@@ -104,10 +126,14 @@ class ChatHistory {
       lastUpdated: new Date().toISOString()
     };
 
+    console.log(`📝 [updateUserContext] Existing context for user ${userIdString}:`, existingContext);
+    console.log(`📝 [updateUserContext] New context data:`, contextData);
+
     // Merge new context data
     const updatedContext = {
       ...existingContext,
       ...contextData,
+      userId: userIdString, // Ensure userId is always string
       pregnancyContext: {
         ...existingContext.pregnancyContext,
         ...(contextData.pregnancyContext || {})
@@ -123,8 +149,9 @@ class ChatHistory {
       lastUpdated: new Date().toISOString()
     };
 
-    this.userContexts.set(userId, updatedContext);
-    console.log(`Updated context for user: ${userId}`);
+    this.userContexts.set(userIdString, updatedContext);
+    console.log(`✅ [updateUserContext] Updated context for user: ${userIdString}`);
+    console.log(`📊 [updateUserContext] Final updated context:`, updatedContext);
 
     return updatedContext;
   }
@@ -174,25 +201,138 @@ class ChatHistory {
   /**
    * Get user's pregnancy context for AI personalization
    * @param {string} userId - User ID
-   * @returns {Object} Pregnancy context for AI
+  /**
+   * Get pregnancy context for AI conversations
+   * Combines actual user pregnancy data with conversation context
+   * IMPORTANT: This method ensures complete user isolation
    */
-  async getPregnancyContext(userId) {
-    const userContext = await this.getUserContext(userId);
+  async getPregnancyContextForUser(userId) {
+    // Import User model
+    const User = require('../models/User');
+    const { getTrimester, getWeekOfPregnancy, calculateDueDate } = require('../utils/pregnancyUtils');
 
-    if (!userContext) {
+    try {
+      console.log(`🎯 [getPregnancyContextForUser] Getting pregnancy context for user: ${userId}`);
+      console.log(`🔍 [getPregnancyContextForUser] User ID type: ${typeof userId}, length: ${userId?.length}`);
+
+      // Ensure we have a clean string userId for consistency
+      const cleanUserId = String(userId).trim();
+      console.log(`🧹 [getPregnancyContextForUser] Clean user ID: ${cleanUserId}`);
+
+      // Ensure userId is a valid ObjectId string
+      if (!cleanUserId || typeof cleanUserId !== 'string' || cleanUserId.length !== 24) {
+        console.log(`❌ [getPregnancyContextForUser] Invalid user ID format: ${cleanUserId}`);
+        return {
+          trimester: 1,
+          weekOfPregnancy: 8,
+          isFirstTime: true,
+          userId: cleanUserId,
+          source: 'default-invalid-id'
+        };
+      }
+
+      // Get actual user data from database
+      const user = await User.findById(cleanUserId);
+
+      if (!user) {
+        console.log(`❌ [getPregnancyContextForUser] User not found in database: ${cleanUserId}`);
+        return {
+          trimester: 1,
+          weekOfPregnancy: 8,
+          isFirstTime: true,
+          userId: cleanUserId,
+          source: 'default-user-not-found'
+        };
+      }
+
+      console.log(`✅ [getPregnancyContextForUser] Found user in database:`);
+      console.log(`   - ID: ${user._id}`);
+      console.log(`   - Name: ${user.firstName} ${user.lastName}`);
+      console.log(`   - Email: ${user.email}`);
+      console.log(`   - Conception Date: ${user.conceptionDate}`);
+      console.log(`   - Has Previous Pregnancy: ${user.hasHadPreviousPregnancy}`);
+
+      // Calculate pregnancy details if conception date exists
+      let pregnancyContext = {
+        trimester: 1,
+        weekOfPregnancy: 8,
+        isFirstTime: true,
+        firstName: user.firstName,
+        userId: cleanUserId,
+        source: 'database-defaults'
+      };
+
+      if (user.conceptionDate) {
+        console.log(`📅 [getPregnancyContextForUser] Calculating pregnancy details from conception date: ${user.conceptionDate}`);
+
+        const weekOfPregnancy = getWeekOfPregnancy(user.conceptionDate);
+        const trimester = getTrimester(weekOfPregnancy);
+        const dueDate = calculateDueDate(user.conceptionDate);
+
+        console.log(`   - Week of pregnancy: ${weekOfPregnancy}`);
+        console.log(`   - Trimester: ${trimester}`);
+        console.log(`   - Due date: ${dueDate}`);
+
+        pregnancyContext = {
+          trimester,
+          weekOfPregnancy,
+          dueDate: dueDate.toISOString().split('T')[0],
+          isFirstTime: !user.hasHadPreviousPregnancy || false,
+          firstName: user.firstName,
+          userId: cleanUserId,
+          source: 'database-calculated'
+        };
+      } else {
+        console.log(`⚠️ [getPregnancyContextForUser] No conception date found for user ${cleanUserId}, using defaults`);
+      }
+
+      console.log(`📊 [getPregnancyContextForUser] Final calculated pregnancy context for user ${cleanUserId}:`, pregnancyContext);
+
+      // CRITICAL: Check for conversation context using the EXACT same userId format
+      console.log(`🔍 [getPregnancyContextForUser] Checking for existing conversation context for user: ${cleanUserId}`);
+      console.log(`🗂️ [getPregnancyContextForUser] Current stored contexts:`, Array.from(this.userContexts.keys()));
+
+      const userContext = await this.getUserContext(cleanUserId);
+
+      if (!userContext) {
+        console.log(`🆕 [getPregnancyContextForUser] No existing conversation context for user ${cleanUserId}, returning fresh context`);
+        const finalContext = {
+          ...pregnancyContext,
+          commonConcerns: [],
+          preferences: [],
+          recentTopics: [],
+          contextSource: 'fresh-no-conversation-history'
+        };
+        console.log(`🎯 [getPregnancyContextForUser] Final fresh context for user ${cleanUserId}:`, finalContext);
+        return finalContext;
+      }
+
+      console.log(`💬 [getPregnancyContextForUser] Found existing conversation context for user ${cleanUserId}:`, userContext);
+
+      // Combine actual pregnancy data with conversation context
+      const finalContext = {
+        ...pregnancyContext,
+        commonConcerns: userContext?.conversationSummary?.commonConcerns || [],
+        preferences: userContext?.conversationSummary?.preferences || [],
+        recentTopics: userContext?.conversationSummary?.lastDiscussed || [],
+        contextSource: 'combined-with-conversation-history'
+      };
+
+      console.log(`🎯 [getPregnancyContextForUser] Final combined context for user ${cleanUserId}:`, finalContext);
+      return finalContext;
+    } catch (error) {
+      console.error(`❌ [getPregnancyContextForUser] Error getting pregnancy context for user ${userId}:`, error);
+      console.error(`❌ [getPregnancyContextForUser] Error stack:`, error.stack);
+      // Return safe defaults with user ID for debugging
       return {
         trimester: 1,
         weekOfPregnancy: 8,
-        isFirstTime: true
+        isFirstTime: true,
+        userId: String(userId),
+        source: 'error-fallback',
+        error: `Failed to get context for user ${userId}: ${error.message}`
       };
     }
-
-    return {
-      ...userContext.pregnancyContext,
-      commonConcerns: userContext.conversationSummary?.commonConcerns || [],
-      preferences: userContext.conversationSummary?.preferences || [],
-      recentTopics: userContext.conversationSummary?.lastDiscussed || []
-    };
   }
 
   /**

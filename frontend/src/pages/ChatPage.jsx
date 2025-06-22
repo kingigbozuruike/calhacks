@@ -1,29 +1,87 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { FaPaperPlane, FaUserCircle, FaTimes, FaMicrophone } from 'react-icons/fa';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { FaPaperPlane, FaTimes, FaMicrophone } from 'react-icons/fa';
 import VoiceModeIcon from '../components/VoiceModeIcon';
 import Logo from '../components/Logo';
 import TypingIndicator from '../components/TypingIndicator';
+import Vapi from '@vapi-ai/web';
 
-const VoiceModeOverlay = ({ close, transcript, isRecording, onStartRecording }) => {
+// VAPI Configuration
+const PUBLIC_VAPI_KEY = "ca0c3517-117a-4aaf-9f5f-2142354d303b";
+const LUNA_ASSISTANT_ID = "50081e37-8bee-4d48-9474-2cfecfc5ba36";
+
+const vapi = new Vapi(PUBLIC_VAPI_KEY);
+
+const VoiceModeOverlay = ({ close, vapiCallStatus, vapiTranscript, onToggleVapiCall }) => {
+  const scrollRef = useRef(null);
+
+  // Auto-scroll transcript to bottom
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [vapiTranscript]);
+
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col items-center p-8">
-      <div className="flex-grow flex flex-col items-center justify-center">
-        <div className={`w-40 h-40 md:w-56 md:h-56 sphere-animation ${isRecording ? 'recording' : ''}`}></div>
+      <div className="flex-grow flex flex-col items-center justify-center max-w-4xl w-full">
+        {/* Visual indicator */}
+        <div className={`w-40 h-40 md:w-56 md:h-56 sphere-animation ${vapiCallStatus === 'in-call' ? 'recording' : ''}`}></div>
+
+        {/* Status text */}
         <p className="text-gray-600 text-xl md:text-2xl mt-8 h-16 text-center">
-          {isRecording ? transcript || "Listening..." : "Tap the microphone to start recording"}
+          {vapiCallStatus === 'in-call' ? "Voice chat active - Speak naturally" :
+           vapiCallStatus === 'starting' ? "Connecting..." :
+           vapiCallStatus === 'ending' ? "Ending call..." :
+           vapiCallStatus.startsWith('error') ? vapiCallStatus :
+           "Click the microphone to start voice chat"}
         </p>
+
+        {/* Transcript display */}
+        <div
+          ref={scrollRef}
+          className="w-full max-w-2xl h-64 mt-8 p-4 bg-gray-50 rounded-lg overflow-y-auto border"
+        >
+          <h3 className="font-semibold text-gray-800 mb-4">Conversation Transcript:</h3>
+          {vapiTranscript.length === 0 ? (
+            <p className="text-gray-500 italic">Transcript will appear here during the conversation...</p>
+          ) : (
+            <div className="space-y-2">
+              {vapiTranscript.map((msg, index) => (
+                <div key={index} className={`p-2 rounded ${
+                  msg.role === 'user' ? 'bg-blue-100 text-blue-800' :
+                  msg.role === 'assistant' ? 'bg-green-100 text-green-800' :
+                  'bg-gray-100 text-gray-600'
+                }`}>
+                  <span className="font-medium capitalize">{msg.role}:</span> {msg.text}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
+      {/* Control buttons */}
       <div className="flex items-center space-x-8 pb-8">
         <button
-          onClick={onStartRecording}
-          className="bg-gray-100 p-4 rounded-full hover:bg-gray-200 transition-colors"
+          onClick={onToggleVapiCall}
+          disabled={vapiCallStatus === 'starting' || vapiCallStatus === 'ending'}
+          className={`p-4 rounded-full transition-colors ${
+            vapiCallStatus === 'in-call'
+              ? 'bg-red-100 hover:bg-red-200 text-red-600'
+              : 'bg-green-100 hover:bg-green-200 text-green-600'
+          }`}
         >
-          <FaMicrophone size={24} className="text-gray-700" />
+          <FaMicrophone size={24} className={vapiCallStatus === 'in-call' ? 'animate-pulse' : ''} />
         </button>
         <button
-          onClick={close}
+          onClick={() => {
+            // Stop VAPI call if it's active
+            if (vapiCallStatus === 'in-call') {
+              onToggleVapiCall();
+            }
+            close();
+          }}
           className="bg-gray-100 p-4 rounded-full hover:bg-gray-200 transition-colors"
         >
           <FaTimes size={24} className="text-gray-700" />
@@ -35,17 +93,145 @@ const VoiceModeOverlay = ({ close, transcript, isRecording, onStartRecording }) 
 
 const ChatPage = () => {
   const [searchParams] = useSearchParams();
-  const trimester = parseInt(searchParams.get('trimester')) || 1;
+  const navigate = useNavigate();
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
 
-  const [messages, setMessages] = useState([
-    { id: 1, text: "How are you feeling today?", sender: 'ai' },
-  ]);
+  // User and trimester state
+  const [userContext, setUserContext] = useState(null);
+  const [isLoadingContext, setIsLoadingContext] = useState(true);
+  const [sessionId, setSessionId] = useState(null);
+
+  const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [vapiCallStatus, setVapiCallStatus] = useState('idle');
+  const [vapiTranscript, setVapiTranscript] = useState([]);
+
+  // VAPI event handlers
+  const handleVapiCallStart = () => {
+    console.log('Vapi: Call Started');
+    setVapiCallStatus('in-call');
+    setVapiTranscript([{ role: 'system', text: 'Voice call connected. Please speak.' }]);
+  };
+
+  const handleVapiCallEnd = () => {
+    console.log('Vapi: Call Ended');
+    setVapiCallStatus('idle');
+    setVapiTranscript(prev => [...prev, { role: 'system', text: 'Voice call disconnected.' }]);
+  };
+
+  const handleVapiMessage = (message) => {
+    console.log('Vapi Message Received:', message);
+    if (message.type === 'transcript') {
+      setVapiTranscript(prev => [...prev, { role: message.role, text: message.transcript }]);
+
+      // Add transcript to chat messages
+      if (message.role === 'user' || message.role === 'assistant') {
+        const chatMessage = {
+          id: Date.now() + Math.random(),
+          text: message.transcript,
+          sender: message.role === 'user' ? 'user' : 'ai'
+        };
+        setMessages(prevMessages => [...prevMessages, chatMessage]);
+      }
+    } else if (message.type === 'function-call') {
+      setVapiTranscript(prev => [...prev, { role: 'system', text: `AI requested function: ${message.functionCall.name}` }]);
+    }
+  };
+
+  const handleVapiError = (error) => {
+    console.error('Vapi Error:', error);
+    setVapiCallStatus(`error: ${error.message}`);
+    setVapiTranscript(prev => [...prev, { role: 'system', text: `Error: ${error.message}` }]);
+  };
+
+  // Setup VAPI event listeners
+  useEffect(() => {
+    vapi.on('call-start', handleVapiCallStart);
+    vapi.on('call-end', handleVapiCallEnd);
+    vapi.on('message', handleVapiMessage);
+    vapi.on('error', handleVapiError);
+
+    return () => {
+      vapi.off('call-start', handleVapiCallStart);
+      vapi.off('call-end', handleVapiCallEnd);
+      vapi.off('message', handleVapiMessage);
+      vapi.off('error', handleVapiError);
+    };
+  }, []);
+
+  const toggleVapiCall = async () => {
+    if (vapiCallStatus === 'in-call') {
+      setVapiCallStatus('ending');
+      vapi.stop();
+    } else {
+      setVapiCallStatus('starting');
+      try {
+        // Request microphone permission
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(track => track.stop());
+
+        // Start VAPI call
+        vapi.start(LUNA_ASSISTANT_ID);
+      } catch (err) {
+        console.error('Microphone access denied or error:', err);
+        setVapiCallStatus('error: Mic access denied');
+        setVapiTranscript(prev => [...prev, { role: 'system', text: 'Error: Please allow microphone access to use the voice assistant.' }]);
+      }
+    }
+  };
+
+  // Get trimester from URL params or user context
+  const trimester = parseInt(searchParams.get('trimester')) || userContext?.trimester || 1;
+
+  // Fetch user context on component mount
+  useEffect(() => {
+    const fetchUserContext = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      try {
+        const response = await fetch('http://localhost:5000/api/dashboard', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const context = {
+            trimester: data.data.user.trimester,
+            weekOfPregnancy: data.data.user.weekOfPregnancy,
+            dueDate: data.data.user.dueDate,
+            firstName: data.data.user.firstName || 'there'
+          };
+          setUserContext(context);
+
+          // Add initial welcome message
+          setMessages([{
+            id: 1,
+            text: `Hi ${context.firstName}! How are you feeling today? I'm here to support you through your pregnancy journey.`,
+            sender: 'ai'
+          }]);
+        } else {
+          console.error('Failed to fetch user context');
+        }
+      } catch (error) {
+        console.error('Error fetching user context:', error);
+      } finally {
+        setIsLoadingContext(false);
+      }
+    };
+
+    fetchUserContext();
+  }, [navigate]);
 
   useEffect(() => {
     if (!('webkitSpeechRecognition' in window)) {
@@ -65,7 +251,7 @@ const ChatPage = () => {
       // Don't automatically exit voice mode, let user decide
     };
     recognition.onerror = (event) => console.error('Speech recognition error: ', event.error);
-    
+
     recognition.onresult = (event) => {
       let interimTranscript = '';
       let finalTranscript = '';
@@ -86,8 +272,8 @@ const ChatPage = () => {
     return () => {
       recognition.stop();
     };
-  }, [isVoiceMode]); 
-  
+  }, [isVoiceMode]);
+
   const handleVoiceModeActivate = () => {
     if (recognitionRef.current) {
       setInputValue('');
@@ -145,43 +331,115 @@ const ChatPage = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-  
+
   const currentTrimesterInfo = trimesterInfo[trimester];
 
-  const handleSendMessage = (fromVoice = false) => {
+  const handleSendMessage = async (fromVoice = false) => {
     const messageToSend = inputValue.trim();
-    if (messageToSend) {
-      setMessages([...messages, { id: Date.now(), text: messageToSend, sender: 'user' }]);
-      setInputValue('');
-      
-      // Show typing indicator
-      setIsTyping(true);
-      
-      // Simulate AI response after a delay
-      setTimeout(() => {
-        setIsTyping(false);
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          { id: Date.now() + 1, text: "Thanks for sharing. It's important to acknowledge your feelings.", sender: 'ai' },
-        ]);
-      }, 2000);
+    if (!messageToSend) return;
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    // Add user message to chat
+    const userMessage = { id: Date.now(), text: messageToSend, sender: 'user' };
+    setMessages(prevMessages => [...prevMessages, userMessage]);
+    setInputValue('');
+
+    // Show typing indicator
+    setIsTyping(true);
+
+    try {
+      const response = await fetch('http://localhost:5000/api/chatbot/message', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: messageToSend,
+          sessionId: sessionId
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+
+        // Update session ID if provided
+        if (data.data.sessionId) {
+          setSessionId(data.data.sessionId);
+        }
+
+        // Add AI response to chat
+        const aiMessage = {
+          id: Date.now() + 1,
+          text: data.data.botResponse,
+          sender: 'ai'
+        };
+
+        setMessages(prevMessages => [...prevMessages, aiMessage]);
+      } else {
+        // Handle error response
+        const errorMessage = {
+          id: Date.now() + 1,
+          text: "I'm sorry, I'm having trouble responding right now. Please try again.",
+          sender: 'ai'
+        };
+        setMessages(prevMessages => [...prevMessages, errorMessage]);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      // Add error message to chat
+      const errorMessage = {
+        id: Date.now() + 1,
+        text: "I'm sorry, I'm having trouble connecting right now. Please try again.",
+        sender: 'ai'
+      };
+      setMessages(prevMessages => [...prevMessages, errorMessage]);
+    } finally {
+      setIsTyping(false);
+    }
+
+    // If this was from voice mode, exit voice mode after sending
+    if (fromVoice && isVoiceMode) {
+      handleVoiceModeDeactivate();
     }
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       handleSendMessage();
     }
   };
 
+  // Show loading state while fetching user context
+  if (isLoadingContext) {
+    return (
+      <div className="h-screen bg-white flex flex-col items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-400 mb-4"></div>
+        <p className="text-gray-600">Loading your chat...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen bg-white flex flex-col">
-      {isVoiceMode && <VoiceModeOverlay close={handleVoiceModeDeactivate} transcript={inputValue} isRecording={isRecording} onStartRecording={handleStartRecording} />}
-      
+      {isVoiceMode && (
+        <VoiceModeOverlay
+          close={handleVoiceModeDeactivate}
+          vapiCallStatus={vapiCallStatus}
+          vapiTranscript={vapiTranscript}
+          onToggleVapiCall={toggleVapiCall}
+        />
+      )}
+
       <header className="flex justify-center pt-8">
         <Logo className="text-4xl" />
       </header>
-      
+
       <div className="relative overflow-hidden p-8 shrink-0">
         <div className="absolute -top-24 -left-24 w-72 h-72 bg-purple-100 rounded-full opacity-50"></div>
         <div className="absolute -bottom-24 -right-12 w-96 h-96 bg-green-100 rounded-full opacity-50"></div>
@@ -237,16 +495,29 @@ const ChatPage = () => {
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyDown}
               placeholder="Share your thoughts..."
               className="w-full border-2 border-gray-200 rounded-full py-3 pl-6 pr-28 focus:outline-none focus:border-pink-300 transition-colors"
             />
             <div className="absolute right-2 flex items-center">
               <button
-                onClick={handleVoiceModeActivate}
-                className="p-2 focus:outline-none"
+                onClick={() => {
+                  if (vapiCallStatus === 'idle') {
+                    toggleVapiCall();
+                    setIsVoiceMode(true);
+                  } else {
+                    toggleVapiCall();
+                  }
+                }}
+                disabled={vapiCallStatus === 'starting' || vapiCallStatus === 'ending'}
+                className={`p-2 focus:outline-none transition-colors ${
+                  vapiCallStatus === 'in-call'
+                    ? 'text-red-500 hover:text-red-600'
+                    : 'text-gray-400 hover:text-pink-400'
+                }`}
+                title={vapiCallStatus === 'in-call' ? 'End voice chat' : 'Start voice chat'}
               >
-                <VoiceModeIcon className="w-6 h-6 text-gray-400 hover:text-pink-400" />
+                <FaMicrophone className={`w-6 h-6 ${vapiCallStatus === 'in-call' ? 'animate-pulse' : ''}`} />
               </button>
               <button
                 onClick={handleSendMessage}
@@ -262,4 +533,4 @@ const ChatPage = () => {
   );
 };
 
-export default ChatPage; 
+export default ChatPage;

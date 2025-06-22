@@ -1,39 +1,71 @@
-// TODO: Developer A - Import User model for user validation once mongoose is set up
-// const User = require('../models/User');
+// Import User model for user validation
+const User = require('../models/User');
 
 // Import Gemini AI service for generating daily content
 const GeminiService = require('../services/GeminiService');
+
+// Import pregnancy utilities
+const getTrimester = require('../utils/getTrimester');
+const dayjs = require('dayjs');
 
 /**
  * Get dashboard data for the authenticated user
  * GET /api/dashboard
  */
 const getDashboardData = async (req, res) => {
+  console.log('🚀 Dashboard API called');
+  console.log('📋 Request headers:', req.headers);
+  console.log('🔐 Request user from JWT:', req.user);
+
   try {
-    // TODO: Developer A - Replace with actual user ID from JWT token
-    // const userId = req.user.id;
-    const userId = req.query.userId || 'user123'; // Mock user ID for development
+    // Get user ID from JWT token (now that authentication is enabled)
+    const userId = req.user.id || req.user._id;
+    console.log('👤 Extracted userId:', userId);
 
-    // TODO: Developer A - Get user's pregnancy information from database
-    // const user = await User.findById(userId);
-    // const trimester = user.trimester;
-    // const weekOfPregnancy = user.weekOfPregnancy;
-    // const dueDate = user.dueDate;
-    // const conceptionDate = user.conceptionDate;
+    // Get user's pregnancy information from database
+    console.log('🔍 Searching for user in database...');
+    const user = await User.findById(userId);
+    console.log('👥 Found user:', user ? 'Yes' : 'No');
+    console.log('📅 User conception date:', user?.conceptionDate);
 
-    // Mock user pregnancy data for development
-    const userPregnancyData = {
-      trimester: parseInt(req.query.trimester) || 1,
-      weekOfPregnancy: parseInt(req.query.weekOfPregnancy) || 8,
-      dueDate: req.query.dueDate || new Date(Date.now() + 7 * 30 * 24 * 60 * 60 * 1000).toISOString(),
-      conceptionDate: req.query.conceptionDate || new Date(Date.now() - 8 * 7 * 24 * 60 * 60 * 1000).toISOString()
-    };
+    if (!user) {
+      console.log('❌ User not found in database');
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Calculate pregnancy data from user's conception date
+    let userPregnancyData;
+    if (user.conceptionDate) {
+      const conceptionDate = new Date(user.conceptionDate);
+      const today = new Date();
+      const daysSinceConception = Math.floor((today - conceptionDate) / (1000 * 60 * 60 * 24));
+      const weekOfPregnancy = Math.floor(daysSinceConception / 7);
+      const trimester = getTrimester(conceptionDate);
+      const dueDate = dayjs(conceptionDate).add(40, 'week').toDate();
+
+      userPregnancyData = {
+        trimester,
+        weekOfPregnancy,
+        dueDate: dueDate.toISOString(),
+        conceptionDate: user.conceptionDate.toISOString()
+      };
+    } else {
+      // If no conception date, return error asking user to complete setup
+      return res.status(400).json({
+        success: false,
+        message: 'Please complete your pregnancy information setup',
+        redirectTo: '/pregnancy-info'
+      });
+    }
 
     // Get trimester progress
     const trimesterProgress = calculateTrimesterProgress(userPregnancyData);
 
-    // Get AI-generated daily content (tips, affirmations, todos)
-    const dailyContent = await getAIGeneratedDailyContent(userPregnancyData);
+    // Get AI-generated daily content (tips, affirmations, todos) - cached per day
+    const dailyContent = await getAIGeneratedDailyContent(userPregnancyData, userId);
 
     // Generate and store AI tasks, then retrieve them from the Task model
     const aiDailyTasks = await GeminiService.generateDailyTasks(userPregnancyData);
@@ -44,24 +76,28 @@ const getDashboardData = async (req, res) => {
     Task.addAIGeneratedTasks(userId, aiDailyTasks, 'daily');
     Task.addAIGeneratedTasks(userId, aiTrimesterTasks, 'trimester');
 
-    // Get persisted tasks from the Task model
+    // Get persisted tasks from the Task model with limits
     const todaysTasks = Task.mockTasks.filter(task =>
       task.userId === userId &&
       task.source === 'ai-generated' &&
       task.taskType === 'daily' &&
       task.assignedDate.split('T')[0] === new Date().toISOString().split('T')[0]
-    );
+    ).slice(0, 7); // Limit to 7 daily tasks
 
     const trimesterTasks = Task.mockTasks.filter(task =>
       task.userId === userId &&
       task.source === 'ai-generated' &&
       task.taskType === 'trimester' &&
       task.trimester === userPregnancyData.trimester
-    );
+    ).slice(0, 15); // Limit to 15 trimester tasks
 
     // Compile dashboard data
     const dashboardData = {
       user: {
+        userId: user.userId,
+        name: user.name,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
         trimester: userPregnancyData.trimester,
         weekOfPregnancy: userPregnancyData.weekOfPregnancy,
         dueDate: userPregnancyData.dueDate,
@@ -243,12 +279,31 @@ function calculateTrimesterProgress(pregnancyData) {
   };
 }
 
+// Simple in-memory cache for daily content (in production, use Redis or database)
+const dailyContentCache = new Map();
+
 /**
  * Get AI-generated daily content (tips, affirmations, todos) using Gemini
+ * Cached per user per day to ensure consistency
  * @param {Object} userContext - User's pregnancy context
+ * @param {string} userId - User ID for caching
  * @returns {Promise<Object>} - Daily content object
  */
-async function getAIGeneratedDailyContent(userContext) {
+async function getAIGeneratedDailyContent(userContext, userId) {
+  // Create cache key based on user ID and current date
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+  const cacheKey = `${userId}-${today}`;
+
+  console.log('🗄️ Checking daily content cache for key:', cacheKey);
+
+  // Check if we have cached content for today
+  if (dailyContentCache.has(cacheKey)) {
+    console.log('✅ Found cached daily content');
+    return dailyContentCache.get(cacheKey);
+  }
+
+  console.log('🔄 Generating new daily content...');
+
   // Generate all content in parallel for better performance
   // GeminiService handles its own fallbacks internally
   const [tip, affirmation, todo, didYouKnow] = await Promise.all([
@@ -258,12 +313,40 @@ async function getAIGeneratedDailyContent(userContext) {
     GeminiService.generateDidYouKnowFact(userContext)
   ]);
 
-  return {
-    tip,
-    affirmation,
-    todo,
-    didYouKnow
+  const dailyContent = {
+    tip: typeof tip === 'object' ? tip.content || tip.title : tip,
+    affirmation: typeof affirmation === 'object' ? affirmation.content || affirmation.title : affirmation,
+    todo: typeof todo === 'object' ? todo.content || todo.title : todo,
+    didYouKnow: typeof didYouKnow === 'string' ? didYouKnow : (didYouKnow?.content || didYouKnow?.title || 'Did you know your baby is growing every day?'),
+    generatedAt: new Date().toISOString(),
+    cacheKey
   };
+
+  // Cache the content for the day
+  dailyContentCache.set(cacheKey, dailyContent);
+  console.log('💾 Cached daily content for today');
+
+  // Clean up old cache entries (keep only last 7 days)
+  cleanupOldCacheEntries();
+
+  return dailyContent;
+}
+
+/**
+ * Clean up old cache entries to prevent memory leaks
+ */
+function cleanupOldCacheEntries() {
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const cutoffDate = sevenDaysAgo.toISOString().split('T')[0];
+
+  for (const [key, value] of dailyContentCache.entries()) {
+    const entryDate = key.split('-').slice(-3).join('-'); // Extract YYYY-MM-DD from key
+    if (entryDate < cutoffDate) {
+      dailyContentCache.delete(key);
+      console.log('🗑️ Cleaned up old cache entry:', key);
+    }
+  }
 }
 
 /**

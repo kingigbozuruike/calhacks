@@ -15,6 +15,7 @@ const UserSchema = new mongoose.Schema({
   healthComplications: { type: String }, // Health complications (optional, can be a string or array if needed)
   pregnancyStage: { type: String }, // e.g., 'first', 'second', 'third'
   conceptionDate: { type: Date },
+  phoneNumber: { type: String }, // Phone number for voice assistant calls
   userId: { type: Number, unique: true }, // Unique auto-incrementing user ID
   createdAt: { type: Date, default: Date.now },
 });

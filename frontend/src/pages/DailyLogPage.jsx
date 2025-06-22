@@ -1,158 +1,465 @@
-import React, { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-// Images are now served from public/images
-// No need to import images when they're in the public folder
-import { FaNotesMedical, FaPills, FaDumbbell, FaBed, FaWeight, FaHeart, FaCheck, FaCalendarAlt, FaUserMd, FaBaby, FaHospital, FaClipboardList } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { FaNotesMedical, FaPills, FaDumbbell, FaHeart, FaCheck, FaCalendarAlt, FaUserMd, FaClipboardList, FaChevronLeft, FaChevronRight, FaStickyNote, FaSave } from 'react-icons/fa';
 import Logo from '../components/Logo';
-import DateSelector from '../components/DateSelector';
 
 const DailyLogPage = () => {
-  const [searchParams] = useSearchParams();
-  const trimester = parseInt(searchParams.get('trimester')) || 1;
-  const [currentWeek, setCurrentWeek] = useState(trimester === 1 ? 6 : trimester === 2 ? 18 : 32);
+  const navigate = useNavigate();
+  const [dashboardData, setDashboardData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userName, setUserName] = useState('');
 
-  const trimesterWeeks = {
-    1: Array.from({ length: 12 }, (_, i) => i + 1), // weeks 1-12
-    2: Array.from({ length: 14 }, (_, i) => i + 13), // weeks 13-26
-    3: Array.from({ length: 14 }, (_, i) => i + 27), // weeks 27-40
-  };
+  // Task completion state
+  const [dailyTasks, setDailyTasks] = useState([]);
+  const [trimesterTasks, setTrimesterTasks] = useState([]);
 
-  const trimesterTasks = {
-    1: [
-      { id: 1, title: 'Confirm Pregnancy', frequency: 'Schedule initial prenatal visit', completed: false, icon: <FaUserMd className="text-blue-400" /> },
-      { id: 2, title: 'Prenatal Vitamins', frequency: 'Take daily (folic acid, iron, DHA)', completed: true, icon: <FaPills className="text-purple-400" /> },
-      { id: 3, title: 'Track Symptoms', frequency: 'Log nausea, urination, mood changes', completed: false, icon: <FaNotesMedical className="text-pink-400" /> },
-      { id: 4, title: 'Light Exercise', frequency: 'Begin gentle routine', completed: false, icon: <FaDumbbell className="text-green-400" /> },
-      { id: 5, title: 'Rest & Hydration', frequency: '7+ hours sleep, 8-10 glasses water', completed: false, icon: <FaBed className="text-indigo-400" /> },
-    ],
-    2: [
-      { id: 1, title: 'Regular Checkups', frequency: 'Schedule anatomy scan (week 18-20)', completed: false, icon: <FaUserMd className="text-blue-400" /> },
-      { id: 2, title: 'Nutrition & Hydration', frequency: 'Optimize diet and water intake', completed: false, icon: <FaPills className="text-purple-400" /> },
-      { id: 3, title: 'Childbirth Classes', frequency: 'Enroll in preparation classes', completed: false, icon: <FaClipboardList className="text-pink-400" /> },
-      { id: 4, title: 'Fetal Movement', frequency: 'Monitor kick counts daily', completed: false, icon: <FaBaby className="text-green-400" /> },
-      { id: 5, title: 'Exercise Routine', frequency: 'Continue gentle exercise', completed: false, icon: <FaDumbbell className="text-indigo-400" /> },
-    ],
-    3: [
-      { id: 1, title: 'Frequent Visits', frequency: 'Biweekly, then weekly from week 36', completed: false, icon: <FaUserMd className="text-blue-400" /> },
-      { id: 2, title: 'Birth Plan', frequency: 'Prepare plan and hospital bag', completed: false, icon: <FaClipboardList className="text-purple-400" /> },
-      { id: 3, title: 'Nursery Setup', frequency: 'Pack for delivery, set up nursery', completed: false, icon: <FaBaby className="text-pink-400" /> },
-      { id: 4, title: 'Monitor Signs', frequency: 'Watch for labor, preeclampsia, diabetes', completed: false, icon: <FaNotesMedical className="text-green-400" /> },
-      { id: 5, title: 'Hospital Prep', frequency: 'Finalize delivery arrangements', completed: false, icon: <FaHospital className="text-indigo-400" /> },
-    ],
-  };
+  // Pagination state for trimester tasks
+  const [currentTrimesterPage, setCurrentTrimesterPage] = useState(1);
+  const trimesterTasksPerPage = 5;
 
-  const [monitoringItems, setMonitoringItems] = useState(trimesterTasks[trimester]);
+  // Journal/Notes state
+  const [journalEntry, setJournalEntry] = useState('');
+  const [isSavingNote, setIsSavingNote] = useState(false);
+  const [recentNotes, setRecentNotes] = useState([]);
 
-  const [badges, setBadges] = useState([
-    { id: 1, title: 'First Trimester Health Star', earned: trimester === 1, icon: '/images/get-pregnant-icon.svg' },
-    { id: 2, title: 'Second Trimester Champion', earned: trimester === 2, icon: '/images/get-pregnant-icon2.svg' },
-    { id: 3, title: 'Third Trimester Warrior', earned: trimester === 3, icon: '/images/get-pregnant-icon3.svg' },
-    { id: 4, title: `Logged symptoms ${trimester === 1 ? '7' : trimester === 2 ? '14' : '21'} days in a row`, earned: trimester === 3, icon: '/images/calendar-new.svg' },
-  ]);
+  useEffect(() => {
+    // Check if user is authenticated
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
 
-  const toggleItem = (id) => {
-    setMonitoringItems(
-      monitoringItems.map((item) =>
-        item.id === id ? { ...item, completed: !item.completed } : item
+    // Fetch dashboard data from backend
+    const fetchDashboardData = async () => {
+      console.log('🚀 DailyLog: Starting data fetch');
+
+      try {
+        // Fetch both dashboard data and profile data
+        const [dashboardResponse, profileResponse, notesResponse] = await Promise.all([
+          fetch('http://localhost:5000/api/dashboard', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }),
+          fetch('http://localhost:5000/api/profile', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }),
+          fetch('http://localhost:5000/api/notes/recent?limit=3', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          })
+        ]);
+
+        console.log('📊 DailyLog: Dashboard response status:', dashboardResponse.status);
+        console.log('👤 DailyLog: Profile response status:', profileResponse.status);
+        console.log('📝 DailyLog: Notes response status:', notesResponse.status);
+
+        if (dashboardResponse.ok && profileResponse.ok) {
+          const dashboardData = await dashboardResponse.json();
+          const profileData = await profileResponse.json();
+
+          console.log('📊 DailyLog: Dashboard data received:', dashboardData);
+          console.log('👤 DailyLog: Profile data received:', profileData);
+
+          // Merge the data
+          const mergedData = {
+            ...dashboardData.data,
+            user: {
+              ...dashboardData.data.user,
+              email: profileData.email
+            }
+          };
+
+          setDashboardData(mergedData);
+
+          // Set tasks from backend data
+          if (mergedData.tasks) {
+            setDailyTasks(mergedData.tasks.today || []);
+            setTrimesterTasks(mergedData.tasks.trimester || []);
+          }
+
+          // Extract user name from email
+          const emailName = profileData.email ? profileData.email.split('@')[0] : 'Alice';
+          setUserName(emailName.charAt(0).toUpperCase() + emailName.slice(1));
+
+          // Load recent notes if available
+          if (notesResponse.ok) {
+            const notesData = await notesResponse.json();
+            setRecentNotes(notesData.data.notes || []);
+          }
+        } else {
+          console.error('❌ DailyLog: API responses not OK');
+          console.error('Failed to load dashboard data');
+        }
+      } catch (err) {
+        console.error('❌ DailyLog: Fetch error:', err);
+        console.error('Network error. Please check your connection.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [navigate]);
+
+  const toggleDailyTask = (taskId) => {
+    setDailyTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.id === taskId ? { ...task, isCompleted: !task.isCompleted } : task
       )
     );
   };
 
-  const getTrimesterTitle = () => {
+  const toggleTrimesterTask = (taskId) => {
+    setTrimesterTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.id === taskId ? { ...task, isCompleted: !task.isCompleted } : task
+      )
+    );
+  };
+
+  const getTaskIcon = (category) => {
+    const iconMap = {
+      'health': <FaUserMd className="text-blue-400" />,
+      'nutrition': <FaPills className="text-purple-400" />,
+      'exercise': <FaDumbbell className="text-green-400" />,
+      'wellness': <FaHeart className="text-pink-400" />,
+      'medical': <FaNotesMedical className="text-red-400" />,
+      'preparation': <FaClipboardList className="text-indigo-400" />,
+      'monitoring': <FaCalendarAlt className="text-yellow-400" />,
+      'default': <FaCheck className="text-gray-400" />
+    };
+    return iconMap[category] || iconMap['default'];
+  };
+
+  const getTrimesterTitle = (trimester) => {
     const titles = {
       1: 'First Trimester',
-      2: 'Second Trimester', 
+      2: 'Second Trimester',
       3: 'Third Trimester'
     };
-    return titles[trimester];
+    return titles[trimester] || 'Current Trimester';
   };
+
+  // Pagination logic for trimester tasks
+  const totalTrimesterPages = Math.ceil(trimesterTasks.length / trimesterTasksPerPage);
+  const startIndex = (currentTrimesterPage - 1) * trimesterTasksPerPage;
+  const endIndex = startIndex + trimesterTasksPerPage;
+  const currentTrimesterTasks = trimesterTasks.slice(startIndex, endIndex);
+
+  const handleTrimesterPageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalTrimesterPages) {
+      setCurrentTrimesterPage(newPage);
+    }
+  };
+
+  // Journal/Notes functionality
+  const handleSaveNote = async () => {
+    if (!journalEntry.trim()) return;
+
+    setIsSavingNote(true);
+    const token = localStorage.getItem('token');
+
+    try {
+      const response = await fetch('http://localhost:5000/api/notes', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          content: journalEntry.trim()
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setRecentNotes(prev => [result.data, ...prev.slice(0, 2)]); // Keep only 3 recent notes
+        setJournalEntry('');
+        console.log('Note saved successfully');
+      } else {
+        console.error('Failed to save note');
+      }
+    } catch (error) {
+      console.error('Error saving note:', error);
+    } finally {
+      setIsSavingNote(false);
+    }
+  };
+
+  // Show loading screen while data is loading
+  if (isLoading) {
+    return (
+      <div className="bg-white min-h-screen flex flex-col items-center justify-center">
+        <div className="text-center">
+          <div className="flex justify-center mb-6">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-carnation-pink"></div>
+          </div>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2" style={{fontFamily: 'Poppins'}}>
+            Loading your daily log...
+          </h2>
+          <p className="text-gray-600" style={{fontFamily: 'Poppins'}}>
+            Getting your tasks ready
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 relative overflow-hidden">
       {/* Decorative Background Icons */}
       <FaHeart className="absolute top-0 left-0 text-pink-100 opacity-50 text-9xl transform -translate-x-1/2 -translate-y-1/2 rotate-12" />
       <FaHeart className="absolute bottom-0 right-0 text-purple-100 opacity-50 text-9xl transform translate-x-1/2 translate-y-1/2 -rotate-12" />
-      
+
       <header className="flex justify-center pt-8">
         <Logo className="text-4xl" />
       </header>
 
       <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
-        <DateSelector trimester={trimester} />
+        {/* Header Section */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2" style={{fontFamily: 'Poppins'}}>
+            Daily Log - {userName}
+          </h1>
+          <p className="text-lg text-gray-600" style={{fontFamily: 'Poppins'}}>
+            {dashboardData ? `Week ${dashboardData.user.weekOfPregnancy} - ${getTrimesterTitle(dashboardData.user.trimester)}` : 'Track your pregnancy journey'}
+          </p>
+        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* To Do Section */}
-          <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg p-6 h-full">
-            <h2 className="text-3xl font-bold text-gray-800 mb-6">To Do</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+          {/* Daily Tasks Section */}
+          <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg p-6">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6" style={{fontFamily: 'Poppins'}}>
+              Today's Tasks
+            </h2>
             <div className="space-y-3">
-              {monitoringItems.map((item) => (
-                <div key={item.id} className="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50/50 transition-colors">
-                  <div className="flex items-center">
-                    <div className="text-3xl mr-4">{item.icon}</div>
-                    <div>
-                      <p className="font-semibold text-gray-800 text-lg">{item.title}</p>
-                      <p className="text-sm text-gray-500">{item.frequency}</p>
+              {dailyTasks.length > 0 ? (
+                dailyTasks.map((task) => (
+                  <div key={task.id} className="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50/50 transition-colors">
+                    <div className="flex items-center">
+                      <div className="text-2xl mr-4">{getTaskIcon(task.category)}</div>
+                      <div>
+                        <p className="font-semibold text-gray-800 text-base">
+                          {task.title || task.description || task.content}
+                        </p>
+                        {task.description && task.title && (
+                          <p className="text-sm text-gray-500">{task.description}</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
                     <button
-                      onClick={() => toggleItem(item.id)}
-                      className={`w-12 h-12 flex items-center justify-center rounded-full transition-all duration-300 transform hover:scale-110 ${
-                        item.completed
+                      onClick={() => toggleDailyTask(task.id)}
+                      className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 transform hover:scale-110 ${
+                        task.isCompleted
                           ? 'bg-green-500 text-white shadow-md'
                           : 'bg-gray-200 text-gray-400'
                       }`}
                     >
-                      <FaCheck className="w-6 h-6" />
+                      <FaCheck className="w-4 h-4" />
                     </button>
                   </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <FaClipboardList className="text-gray-300 text-4xl mx-auto mb-4" />
+                  <p className="text-gray-500">No daily tasks available</p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
-          {/* How are you feeling Section */}
-          <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg p-8 flex flex-col">
-            <h2 className="text-3xl font-bold text-gray-800 mb-6">How are you feeling?</h2>
-            <div className="flex-grow flex flex-col items-center justify-center text-center">
-              <img src="/images/husband-and-wife.svg" alt="Support" className="w-85 h-72 "/>
-              <p className="text-gray-600 mb-6 text-lg">Share your thoughts and feelings to get personalized support.</p>
-              <Link to={`/chat?trimester=${trimester}`}>
-                <button className="bg-carnation-pink text-black px-8 py-3 rounded-lg font-medium hover:bg-black hover:text-white transition-colors" style={{fontFamily: 'Fredoka'}}>
-                  Chat with Bumpy
-                </button>
-              </Link>
+          {/* Trimester Tasks Section with Pagination */}
+          <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800" style={{fontFamily: 'Poppins'}}>
+                {dashboardData ? getTrimesterTitle(dashboardData.user.trimester) : 'Trimester'} Tasks
+              </h2>
+              {totalTrimesterPages > 1 && (
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => handleTrimesterPageChange(currentTrimesterPage - 1)}
+                    disabled={currentTrimesterPage === 1}
+                    className={`p-2 rounded-lg transition-colors ${
+                      currentTrimesterPage === 1
+                        ? 'text-gray-300 cursor-not-allowed'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <FaChevronLeft />
+                  </button>
+                  <span className="text-sm text-gray-600">
+                    {currentTrimesterPage} of {totalTrimesterPages}
+                  </span>
+                  <button
+                    onClick={() => handleTrimesterPageChange(currentTrimesterPage + 1)}
+                    disabled={currentTrimesterPage === totalTrimesterPages}
+                    className={`p-2 rounded-lg transition-colors ${
+                      currentTrimesterPage === totalTrimesterPages
+                        ? 'text-gray-300 cursor-not-allowed'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <FaChevronRight />
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="space-y-3">
+              {currentTrimesterTasks.length > 0 ? (
+                currentTrimesterTasks.map((task) => (
+                  <div key={task.id} className="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50/50 transition-colors">
+                    <div className="flex items-center">
+                      <div className="text-2xl mr-4">{getTaskIcon(task.category)}</div>
+                      <div>
+                        <p className="font-semibold text-gray-800 text-base">
+                          {task.title || task.description || task.content}
+                        </p>
+                        {task.description && task.title && (
+                          <p className="text-sm text-gray-500">{task.description}</p>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => toggleTrimesterTask(task.id)}
+                      className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 transform hover:scale-110 ${
+                        task.isCompleted
+                          ? 'bg-green-500 text-white shadow-md'
+                          : 'bg-gray-200 text-gray-400'
+                      }`}
+                    >
+                      <FaCheck className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <FaClipboardList className="text-gray-300 text-4xl mx-auto mb-4" />
+                  <p className="text-gray-500">No trimester tasks available</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Achievements Section */}
-        <div className="mt-16">
-          <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">Your Achievements</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {badges.map((badge) => (
-              <div
-                key={badge.id}
-                className={`bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg p-6 text-center flex flex-col items-center justify-center transition-all duration-300 transform hover:-translate-y-1 ${
-                  badge.earned ? 'opacity-100' : 'opacity-50 grayscale'
-                }`}
-              >
-                <div className="w-16 h-16 mb-4 mx-auto">
-                  <img src={badge.icon} alt={badge.title} className="w-full h-full object-contain" />
-                </div>
-                <h3 className="font-semibold text-gray-800 text-sm">{badge.title}</h3>
-                {badge.earned && (
-                  <span className="mt-2 inline-block bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                    EARNED
-                  </span>
+        {/* Journal/Notes Section */}
+        <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-800" style={{fontFamily: 'Poppins'}}>
+              <FaStickyNote className="inline mr-3 text-yellow-500" />
+              My Journal
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Write New Note */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-700">Write a note</h3>
+              <textarea
+                value={journalEntry}
+                onChange={(e) => setJournalEntry(e.target.value)}
+                placeholder="How are you feeling today? Share your thoughts, experiences, or anything on your mind..."
+                className="w-full h-32 p-4 border border-gray-200 rounded-lg resize-none focus:ring-2 focus:ring-pink-300 focus:border-transparent"
+                maxLength={2000}
+              />
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500">
+                  {journalEntry.length}/2000 characters
+                </span>
+                <button
+                  onClick={handleSaveNote}
+                  disabled={!journalEntry.trim() || isSavingNote}
+                  className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
+                    !journalEntry.trim() || isSavingNote
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'bg-carnation-pink text-black hover:bg-black hover:text-white'
+                  }`}
+                >
+                  <FaSave />
+                  <span>{isSavingNote ? 'Saving...' : 'Save Note'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Recent Notes */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-700">Recent entries</h3>
+              <div className="space-y-3 max-h-40 overflow-y-auto">
+                {recentNotes.length > 0 ? (
+                  recentNotes.map((note) => (
+                    <div key={note.id} className="p-3 bg-gray-50 rounded-lg">
+                      <p className="text-sm text-gray-700 mb-2">{note.content}</p>
+                      <div className="flex justify-between items-center text-xs text-gray-500">
+                        <span>{note.formattedDate}</span>
+                        {note.weekOfPregnancy && (
+                          <span>Week {note.weekOfPregnancy}</span>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-6 text-gray-500">
+                    <FaStickyNote className="text-gray-300 text-3xl mx-auto mb-2" />
+                    <p>No journal entries yet</p>
+                    <p className="text-sm">Start writing to track your journey!</p>
+                  </div>
                 )}
               </div>
-            ))}
+            </div>
           </div>
         </div>
+
+
+        {/* Progress Summary */}
+        {dashboardData && (
+          <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-2xl p-6">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center" style={{fontFamily: 'Poppins'}}>
+              Today's Progress
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-pink-500 mb-2">
+                  {dailyTasks.filter(task => task.isCompleted).length}/{dailyTasks.length}
+                </div>
+                <p className="text-gray-600">Daily Tasks Completed</p>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-purple-500 mb-2">
+                  {trimesterTasks.filter(task => task.isCompleted).length}/{trimesterTasks.length}
+                </div>
+                <p className="text-gray-600">Trimester Tasks Completed</p>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
+
+      {/* Back to Dashboard Button */}
+      <Link to="/dashboard">
+        <button className="fixed bottom-6 left-6 w-16 h-16 bg-carnation-pink rounded-full shadow-lg hover:bg-black hover:text-white transition-colors flex items-center justify-center z-50">
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+        </button>
+      </Link>
+
+      {/* Floating Chat Button */}
+      <Link to="/chat">
+        <button className="fixed bottom-6 right-6 w-16 h-16 bg-carnation-pink rounded-full shadow-lg hover:bg-black hover:text-white transition-colors flex items-center justify-center z-50">
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+        </button>
+      </Link>
     </div>
   );
 };
 
-export default DailyLogPage; 
+export default DailyLogPage;

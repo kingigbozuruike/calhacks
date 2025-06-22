@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { FaBars, FaTimes, FaHome, FaCalendarAlt, FaComment, FaUser, FaCog } from 'react-icons/fa';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { FaBars, FaTimes, FaComment, FaCog, FaSignOutAlt, FaTachometerAlt, FaClipboardList } from 'react-icons/fa';
 import Logo from './Logo';
 
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
@@ -15,10 +16,15 @@ const Sidebar = () => {
     setIsOpen(false);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    closeSidebar();
+    navigate('/');
+  };
+
   const menuItems = [
-    { path: '/home', name: 'Home', icon: <FaHome /> },
-    { path: '/login', name: 'Dashboard', icon: <FaUser /> },
-    { path: '/daily-log', name: 'Daily Log', icon: <FaCalendarAlt /> },
+    { path: '/dashboard', name: 'Dashboard', icon: <FaTachometerAlt /> },
+    { path: '/daily-log', name: 'Daily Log', icon: <FaClipboardList /> },
     { path: '/chat', name: 'Chat', icon: <FaComment /> },
     { path: '/settings', name: 'Settings', icon: <FaCog /> },
   ];
@@ -59,7 +65,7 @@ const Sidebar = () => {
               <FaTimes />
             </button>
           </div>
-          
+
           {/* User Profile */}
           <div className="flex items-center p-3 mb-6 border-b border-gray-200 pb-4">
             <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-200 mr-3">
@@ -71,7 +77,7 @@ const Sidebar = () => {
             </div>
           </div>
 
-          <nav>
+          <nav className="flex-grow">
             <ul className="space-y-4">
               {menuItems.map((item) => (
                 <li key={item.path}>
@@ -91,9 +97,20 @@ const Sidebar = () => {
               ))}
             </ul>
           </nav>
-          
+
+          {/* Logout Button */}
+          <div className="pt-4 border-t border-gray-200">
+            <button
+              onClick={handleLogout}
+              className="flex items-center w-full p-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+            >
+              <span className="mr-3"><FaSignOutAlt /></span>
+              <span style={{fontFamily: 'Poppins'}}>Logout</span>
+            </button>
+          </div>
+
           {/* Logo at bottom */}
-          <div className="mt-auto pt-6 flex justify-center">
+          <div className="pt-6 flex justify-center">
             <Logo className="text-3xl" />
           </div>
         </div>

@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 
 // Register a new user
 exports.register = async (req, res) => {
-  const { email, password, name, age, healthComplications, pregnancyStage } = req.body;
+  const { email, password, name, age, healthComplications, pregnancyStage, phoneNumber } = req.body;
   try {
     let user = await User.findOne({ email });
     if (user) return res.status(400).json({ msg: 'User already exists' });
@@ -19,6 +19,7 @@ exports.register = async (req, res) => {
       age,
       healthComplications,
       pregnancyStage, // This can be null/empty if not provided
+      phoneNumber, // Phone number for voice assistant calls
       // conceptionDate is handled in profile intake
     });
     // TODO: Add more fields to user if needed

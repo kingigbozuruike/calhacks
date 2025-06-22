@@ -3,8 +3,7 @@ const mongoose = require('mongoose');
 
 const VoiceCheckinSchema = new mongoose.Schema({
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User', // References your User model (assuming you have one)
+    type: Number, // Changed to Number to match the custom userId field in User model
     required: true,
     index: true
   },

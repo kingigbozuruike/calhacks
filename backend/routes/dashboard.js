@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const verifyToken = require('../middleware/verifyToken');
 
 const {
   getDashboardData,
@@ -7,11 +8,8 @@ const {
   getPregnancyStats
 } = require('../controllers/DashboardController');
 
-// TODO: Developer A - Import authentication middleware once implemented
-// const { verifyToken } = require('../middleware/auth');
-
-// TODO: Developer A - Add authentication middleware to all routes
-// router.use(verifyToken);
+// Add authentication middleware to all routes
+router.use(verifyToken);
 
 router.get('/', getDashboardData);
 router.get('/content', getTrimesterContent);

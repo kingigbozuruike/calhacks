@@ -11,7 +11,10 @@ function HomePage() {
       </header>
 
       <main className="flex flex-col items-center justify-center">
-        <h1 className="text-4xl font-bold text-gray-800 mb-12">What is your goal?</h1>
+        <div className="flex items-center justify-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-800 mr-4">What is your goal?</h1>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-carnation-pink"></div>
+        </div>
 
         <div className="space-y-6 w-full max-w-lg px-4">
           <div className="bg-purple-100 rounded-2xl p-6 flex items-center space-x-6 cursor-pointer hover:bg-purple-200 transition-colors">
@@ -22,7 +25,7 @@ function HomePage() {
             </div>
           </div>
 
-          <Link to="/login" className="block">
+          <Link to="/pregnancy-info" className="block">
             <div className="bg-pink-100 rounded-2xl p-6 flex items-center space-x-6 cursor-pointer hover:bg-pink-200 transition-colors">
               <img src="/images/get-pregnant-icon2.svg" alt="Track my pregnancy" className="w-16 h-16" />
               <div>
