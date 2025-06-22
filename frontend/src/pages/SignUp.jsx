@@ -44,8 +44,8 @@ function SignUp() {
             <img src="/images/signup-modal-image.svg" alt="Sign Up" className="h-32" />
           </div>
 
-          <h2 className="text-2xl font-semibold text-thistle text-center mb-6" style={{fontFamily: 'Poppins'}}>
-            Join bump today
+          <h2 className="text-2xl font-semibold text-gray-900 text-center mb-6" style={{fontFamily: 'Poppins'}}>
+            Join Bump today!
           </h2>
 
           <form onSubmit={handleSubmit}>

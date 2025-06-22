@@ -14,7 +14,7 @@ function HomePage() {
         <h1 className="text-4xl font-bold text-gray-800 mb-12">What is your goal?</h1>
 
         <div className="space-y-6 w-full max-w-lg px-4">
-          <div className="bg-purple-100 rounded-2xl p-6 flex items-center space-x-6 cursor-pointer">
+          <div className="bg-purple-100 rounded-2xl p-6 flex items-center space-x-6 cursor-pointer hover:bg-purple-200 transition-colors">
             <img src="/images/get-pregnant-icon.svg" alt="Get pregnant" className="w-16 h-16" />
             <div>
               <h2 className="font-bold text-xl text-gray-800">Get pregnant</h2>
@@ -22,15 +22,17 @@ function HomePage() {
             </div>
           </div>
 
-          <div className="bg-pink-100 rounded-2xl p-6 flex items-center space-x-6 cursor-pointer">
-            <img src="/images/get-pregnant-icon2.svg" alt="Track my pregnancy" className="w-16 h-16" />
-            <div>
-              <h2 className="font-bold text-xl text-gray-800">Track my pregnancy</h2>
-              <p className="text-gray-600">Monitor the progress of your baby on the way</p>
+          <Link to="/login" className="block">
+            <div className="bg-pink-100 rounded-2xl p-6 flex items-center space-x-6 cursor-pointer hover:bg-pink-200 transition-colors">
+              <img src="/images/get-pregnant-icon2.svg" alt="Track my pregnancy" className="w-16 h-16" />
+              <div>
+                <h2 className="font-bold text-xl text-gray-800">Track my pregnancy</h2>
+                <p className="text-gray-600">Monitor the progress of your baby on the way</p>
+              </div>
             </div>
-          </div>
+          </Link>
 
-          <div className="bg-yellow-100 rounded-2xl p-6 flex items-center space-x-6 cursor-pointer">
+          <div className="bg-yellow-100 rounded-2xl p-6 flex items-center space-x-6 cursor-pointer hover:bg-yellow-200 transition-colors">
             <img src="/images/get-pregnant-icon3.svg" alt="Child's development" className="w-16 h-16" />
             <div>
               <h2 className="font-bold text-xl text-gray-800">Child's development</h2>
@@ -38,19 +40,14 @@ function HomePage() {
             </div>
           </div>
         </div>
-        <p className="text-gray-500 mt-8">
-          Already a user?{' '}
-          <Link to="/login" className="font-semibold text-gray-700 underline">
-            Log in
-          </Link>
-        </p>
+
       </main>
 
       <footer className="text-center py-8">
         <p className="text-gray-500">
           By continuing you accept our <br />
-          <span className="font-semibold text-gray-700">Terms of Use</span> and{' '}
-          <span className="font-semibold text-gray-700">Privacy Policy</span>
+          <span className="font-semibold text-gray-700"><a href='#'>Terms of Use</a></span> and{' '}
+          <span className="font-semibold text-gray-700"><a href='#'>Privacy Policy</a></span>
         </p>
       </footer>
     </div>

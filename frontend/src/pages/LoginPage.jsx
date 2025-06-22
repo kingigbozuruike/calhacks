@@ -44,9 +44,9 @@ const LoginPage = () => {
   ];
   
   const trimesterSizes = {
-    1: { fruit: 'lime', emoji: '🍋' },
-    2: { fruit: 'pineapple', emoji: '🍍' },
-    3: { fruit: 'watermelon', emoji: '🍉' },
+    1: { fruit: 'lemon', image: '/images/lemon.png' },
+    2: { fruit: 'pineapple', image: '/images/pineapple.svg' },
+    3: { fruit: 'watermelon', image: '/images/watermelon.png' },
   };
 
   const [currentFact, setCurrentFact] = useState(0);
@@ -120,7 +120,7 @@ const LoginPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
             {/* Left Column: Fun Fact */}
             <div className="bg-purple-50 rounded-2xl p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4 font-fredoka">Did you know?</h2>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4" style={{fontFamily: 'Poppins'}}>Did you know?</h2>
               <div className="relative h-32 flex items-center">
                 <p className="text-lg text-gray-600">{facts[currentFact]}</p>
               </div>
@@ -128,7 +128,7 @@ const LoginPage = () => {
 
             {/* Right Column: Today's Tip */}
             <div className="bg-pink-50 rounded-2xl p-6">
-              <h3 className="text-xl font-semibold text-gray-800 mb-4">Today's Tip</h3>
+              <h3 className="text-2xl font-bold text-gray-800 mb-4" style={{fontFamily: 'Poppins'}}>Today's Tip</h3>
               <div className="space-y-3">
                 {currentTips.map((tip, index) => (
                   <div key={index} className="flex items-start space-x-3">
@@ -142,11 +142,13 @@ const LoginPage = () => {
           
           {/* Baby Size Visualizer */}
           <div className="bg-green-50 rounded-2xl p-6 w-full text-center">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4 font-fredoka">Your baby is growing!</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4" style={{fontFamily: 'Poppins'}}>Your baby is growing!</h2>
             {currentSize && (
-              <div className="flex items-center justify-center">
-                <div className="text-6xl mr-4">{currentSize.emoji}</div>
-                <div>
+              <div className="flex flex-col items-center justify-center">
+                <div className="w-24 h-24 mb-4">
+                  <img src={currentSize.image} alt={currentSize.fruit} className="w-full h-full object-contain" />
+                </div>
+                <div className="text-center">
                   <p className="text-xl text-gray-700">This trimester, they're about the size of a</p>
                   <p className="text-3xl font-bold text-gray-900">{currentSize.fruit}!</p>
                 </div>
@@ -155,10 +157,11 @@ const LoginPage = () => {
           </div>
 
           {/* Log Your Day Button */}
-          <div className="text-center mt-8">
+          <div className="text-center mt-8 mb-16">
             <Link to={`/daily-log?trimester=${currentStep}`}>
               <button
-                className="bg-pink-400 text-white font-bold py-3 px-8 rounded-lg hover:bg-pink-500 transition duration-300"
+                className="bg-carnation-pink text-black px-8 py-3 rounded-lg font-semibold hover:bg-black hover:text-white transition-colors"
+                style={{fontFamily: 'Fredoka'}}
               >
                 Log Your Day
               </button>
