@@ -65,7 +65,7 @@ const DashboardPage = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:5000/api/voice-checkin/start', {
+      const response = await fetch('https://calhacks.onrender.com/api/voice-checkin/start', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -147,13 +147,13 @@ const DashboardPage = () => {
 
         // Fetch both dashboard data and profile data
         const [dashboardResponse, profileResponse] = await Promise.all([
-          fetch('http://localhost:5000/api/dashboard', {
+          fetch('https://calhacks.onrender.com/api/dashboard', {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
             }
           }),
-          fetch('http://localhost:5000/api/profile', {
+          fetch('https://calhacks.onrender.com/api/profile', {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'

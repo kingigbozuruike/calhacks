@@ -197,7 +197,7 @@ const ChatPage = () => {
       }
 
       try {
-        const response = await fetch('http://localhost:5000/api/dashboard', {
+        const response = await fetch('https://calhacks.onrender.com/api/dashboard', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -353,7 +353,7 @@ const ChatPage = () => {
     setIsTyping(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/chatbot/message', {
+      const response = await fetch('https://calhacks.onrender.com/api/chatbot/message', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

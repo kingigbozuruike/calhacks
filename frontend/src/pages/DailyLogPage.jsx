@@ -37,19 +37,19 @@ const DailyLogPage = () => {
       try {
         // Fetch both dashboard data and profile data
         const [dashboardResponse, profileResponse, notesResponse] = await Promise.all([
-          fetch('http://localhost:5000/api/dashboard', {
+          fetch('https://calhacks.onrender.com/api/dashboard', {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
             }
           }),
-          fetch('http://localhost:5000/api/profile', {
+          fetch('https://calhacks.onrender.com/api/profile', {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
             }
           }),
-          fetch('http://localhost:5000/api/notes/recent?limit=3', {
+          fetch('https://calhacks.onrender.com/api/notes/recent?limit=3', {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
@@ -168,7 +168,7 @@ const DailyLogPage = () => {
     const token = localStorage.getItem('token');
 
     try {
-      const response = await fetch('http://localhost:5000/api/notes', {
+      const response = await fetch('https://calhacks.onrender.com/api/notes', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

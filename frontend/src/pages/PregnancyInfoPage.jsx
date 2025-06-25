@@ -77,7 +77,7 @@ const PregnancyInfoPage = () => {
       }
 
       // Update user profile with pregnancy information
-      const response = await fetch('http://localhost:5000/api/profile/intake', {
+      const response = await fetch('https://calhacks.onrender.com/api/profile/intake', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
